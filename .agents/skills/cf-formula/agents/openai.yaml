@@ -1,0 +1,6 @@
+# сгенерировано `cf codex-sync` — не править руками
+interface:
+  display_name: "Formula Writer"
+  short_description: "Formula Writer - вывести формулу из валидированных паттернов"
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,15 @@
+[Unit]
+Description=CF: утренний цикл (фан-аут + гварды)
+# M13 (аудит 2026-07-24): после ребута Persistent=true стреляет циклом параллельно
+# со стартом дашборда — заказываем зависимость и ретраим connection refused,
+# пока uvicorn поднимается. -f превращает 409 «конвейер занят» в failed-юнит.
+Wants=cf-dashboard.service
+After=network-online.target cf-dashboard.service
+OnFailure=cf-alert@%n.service
+
+[Service]
+Type=oneshot
+User=<user>
+WorkingDirectory=/home/<user>/projects/CF
+Environment=PATH=/home/<user>/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/curl -fsS --retry 30 --retry-delay 2 --retry-connrefused -X POST http://127.0.0.1:8787/cycle/run

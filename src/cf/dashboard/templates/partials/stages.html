@@ -1,0 +1,114 @@
+{# Вертикальная лента конвейера (Фаза 2б + прогресс v2, спека §7). Строки — из
+   stages_context.steps (build_timeline): производящие шаги Сбор→Ревью с фазой,
+   полоской и счётчиком за прогон, downstream — живой бэклог. #stages опрашивается
+   htmx раз в 2с, пока идёт прогон; клиентский тикер (static/timeline.js) двигает
+   полоску между опросами к потолку data-ceil по кривой с data-tau. #}
+{% set icons = {"done": "✓", "running": "◐", "warn": "!", "error": "!",
+                "interrupted": "!", "backlog": "○", "idle": "○",
+                "blocked": "⛔", "passed": "✓"} %}
+{% set icon_titles = {"done": "готово", "running": "идёт сейчас", "warn": "с изъянами",
+                      "error": "ошибка", "interrupted": "прогон прерван",
+                      "backlog": "ждёт вас", "idle": "ждёт очереди",
+                      "blocked": "конвейер стоит: ждёт вашего решения",
+                      "passed": "ворота открыты — конвейер проходит"} %}
+<div id="stages"
+     {% if runner and runner.any_running() %}hx-get="/partials/stages" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+  <ol class="timeline">
+  {% for s in steps %}
+  {# Разделителя «дальше — ручные этапы» больше нет: он врал в новой модели —
+     ниже ворот снова идёт автоматика (промпт темы, сценарии, ревью, статистика).
+     Место разделителя заняли сами строки-ворота, каждая на своём месте. #}
+  <li class="tl-step tl-{{ s.status }} tl-kind-{{ s.kind }}">
+    {# значок статуса подписан: оператор спрашивал «что это вообще за элемент» #}
+    {# глиф — aria-hidden, иначе скринридер читает и символ, и подпись #}
+    <span class="tl-icon" title="{{ icon_titles.get(s.status, '') }}"><span aria-hidden="true">{{ icons.get(s.status, "○") }}</span><span class="sr-only">{{ icon_titles.get(s.status, "") }}</span></span>
+    <div class="tl-body">
+      {# Актор и счётчик — ОДНОЙ группой (.tl-meta): в узкой колонке они уезжают
+         под название вторым ярусом целиком, а не порознь. Без обёртки счётчик
+         отрывался от актора и вставал третьей строкой. #}
+      <div class="tl-line">
+        <span class="tl-name">{{ s.label }}</span>
+        <span class="tl-meta">
+          <span class="tl-actor mono">{{ s.actor }}</span>
+          <span class="tl-count">{{ s.count_label }}</span>
+        </span>
+      </div>
+      {% if s.producing %}
+      {% set pct = (s.fraction * 100) | round(2) %}
+      <div class="tl-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+           aria-valuenow="{{ pct | round }}" aria-label="прогресс: {{ s.label }}">
+        {# data-* нужны тикеру: frac — якорь (пол, не точка перезапуска), ceil —
+           ближайшая точка, куда сервер придёт сам, tau — время до неё, run —
+           метка запуска шага (сменилась → полоска начинается заново).
+           Кривую между опросами ведёт клиент, монотонность держит он же. #}
+        <div class="tl-fill{{ ' running' if s.status == 'running' }}" style="width: {{ pct }}%"
+             {% if s.status == "running" %}data-sim="1" data-frac="{{ s.fraction }}"
+             data-ceil="{{ s.ceiling }}" data-tau="{{ s.tau }}"
+             data-run="{{ s.run_token }}"{% endif %}></div>
+      </div>
+      {% if s.status == "running" %}
+      {# что происходит прямо сейчас + сколько идёт: без этого шаг «молчит» минутами #}
+      <div class="tl-phase">
+        <span class="tl-phase-name">{{ s.phase_label }}</span>
+        <span class="tl-elapsed mono" {% if s.elapsed is not none %}data-elapsed="{{ s.elapsed }}"{% endif %}>{{ s.elapsed | duration }}</span>
+        <span class="tl-pct mono" data-pct="1">{{ pct | round }}%</span>
+      </div>
+      {% elif s.note or s.duration is not none %}
+      {# недозаполненная полоска без объяснения читается как «висит» — говорим прямо;
+         а таймер после финиша не исчезает: «шёл 18:03» — ответ на «сколько это заняло» #}
+      <div class="tl-phase">
+        {% if s.note %}<span class="tl-note">{{ s.note }}</span>{% endif %}
+        {% if s.duration is not none %}<span class="tl-took mono">шёл {{ s.duration | duration }}</span>{% endif %}
+      </div>
+      {% endif %}
+      {% endif %}
+      {% if s.kind == "gate" and s.gate %}
+      {# Ворота объясняют себя прямо в ленте: без перечня тем строка «2 темы ждут
+         вас» отправляет искать, какие именно, а точка действия должна быть одна. #}
+      {% if s.gate.rows %}
+      <ul class="tl-gate-rows">
+        {% for g in s.gate.rows %}
+        <li><span class="tl-gate-niche">{{ g.niche | niche_label }}</span>
+          {% if g.state_label %}<span class="tl-gate-state">{{ g.state_label }}</span>{% endif %}
+          {% if g.approved %}<span class="tl-gate-meta mono">{{ g.approved }} {{ g.approved | plural_ru("утверждённый рецепт", "утверждённых рецепта", "утверждённых рецептов") }}</span>{% endif %}
+          {% if g.proposed %}<span class="tl-gate-meta mono">{{ g.proposed }} {{ g.proposed | plural_ru("черновик", "черновика", "черновиков") }}</span>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      {# Черновики по УЖЕ работающим темам показываем отдельно и явно как
+         непреграждающие: решение оператора 2026-07-26 — ворота держат по теме. #}
+      {% if s.gate.informational %}
+      <div class="tl-gate-info">не блокирует:
+        {% for g in s.gate.informational %}{{ g.niche | niche_label }} ({{ g.proposed }}){{ ", " if not loop.last }}{% endfor %}
+      </div>
+      {% endif %}
+      {% if s.note %}<div class="tl-phase"><span class="tl-note">{{ s.note }}</span></div>{% endif %}
+      {% endif %}
+    </div>
+    <div class="tl-actions">
+      {# ▶ только на первом шаге звена с настроенным раннером (P4.1): collect→raw,
+         classify→factory, stats→stats, publish→publish. Кнопка вне <a>, чтобы клик
+         не всплывал к «открыть →» и htmx-POST не обрывался навигацией (P2.1/C1). #}
+      {# id обязателен: htmx возвращает фокус после свопа только по нему, а лента
+         подменяется раз в 2 с — без id фокус клавиатуры улетал на <body> и до
+         кнопки соседнего этапа было не добраться. Имя кнопки — из aria-label:
+         из текста ▶ скринридер читает «чёрный треугольник». #}
+      {# hx-confirm — штатный вопрос htmx (window.confirm): доступен с клавиатуры и
+         скринридеру, разметки не добавляет и id не трогает, а на id завязан возврат
+         фокуса после свопа. Отказ запрос не отправляет. #}
+      {% if s.stage_entry and s.stage and runner and s.stage in configured %}
+      <button class="stage-run" id="run-{{ s.stage }}"
+              aria-label="Запустить этап «{{ s.label }}»" title="Запустить этап «{{ s.label }}»"
+              hx-post="/stages/{{ s.stage }}/run" hx-target="#stages" hx-swap="outerHTML"
+              hx-confirm="Запустить этап «{{ s.label }}»? Это платный прогон агентов."
+              hx-disabled-elt="this"><span aria-hidden="true">▶</span></button>
+      {% endif %}
+      <a class="tl-open" id="open-{{ s.key }}" href="{{ s.href }}"
+         title="Открыть: {{ s.open }}" aria-label="Открыть: {{ s.open }}"><span aria-hidden="true">→</span></a>
+    </div>
+  </li>
+  {% endfor %}
+  </ol>
+  {% if runner and runner.cycle_note %}<div class="cycle-note {{ 'error' if 'ошибка' in runner.cycle_note }}">⟲ {{ runner.cycle_note }}</div>{% endif %}
+</div>

@@ -1,0 +1,6 @@
+# сгенерировано `cf codex-sync` — не править руками
+interface:
+  display_name: "Niche Classifier"
+  short_description: "Niche Classifier - определить ниши raw-видео по контенту (или ре-аудит, или предложить новые ниши из кластеров)"
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,25 @@
+{
+  "approved": [
+    {
+      "name": "expert-item-breakdown",
+      "niche": "бренды-магазины",
+      "path": "formulas/_approved/бренды-магазины/expert-item-breakdown-v1.json",
+      "version": 1,
+      "approved_at": "2026-07-24T22:02:41+00:00"
+    },
+    {
+      "name": "numbered-outfit-looks",
+      "niche": "маркетплейс-подборки",
+      "path": "formulas/_approved/маркетплейс-подборки/numbered-outfit-looks-v2.json",
+      "version": 2,
+      "approved_at": "2026-07-26T02:25:50+00:00"
+    },
+    {
+      "name": "contrarian-verdict",
+      "niche": "мужской-стиль",
+      "path": "formulas/_approved/мужской-стиль/contrarian-verdict-v3.json",
+      "version": 3,
+      "approved_at": "2026-08-12T05:17:33+00:00"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+# сгенерировано `cf codex-sync` — не править руками
+interface:
+  display_name: "Brief Fixer"
+  short_description: "Brief Fixer - переписать забракованный сценарий по замечаниям ревьюера"
+policy:
+  allow_implicit_invocation: false

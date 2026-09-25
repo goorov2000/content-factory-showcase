@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cf"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "gspread>=6.1",
+  "google-auth>=2.30",
+  "jsonschema>=4.22",
+  "fastapi>=0.111",
+  "uvicorn>=0.30",
+  "jinja2>=3.1",
+  "httpx>=0.27",
+  "python-multipart>=0.0.9",
+  # до 14.09.2026 приезжал только транзитивно через gspread
+  "requests>=2.31",
+]
+
+[project.scripts]
+cf = "cf.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=8.2"]
+# исследовательские скрипты: xlsx-таблицы, PDF документов и живой съём через Chromium.
+# После установки — `.venv/bin/playwright install chromium`.
+research = ["openpyxl>=3.1", "playwright>=1.40"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

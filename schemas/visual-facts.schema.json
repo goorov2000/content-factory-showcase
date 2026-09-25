@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CF visual facts (vision engine output)",
+  "description": "Выход vision-движка по медиа одной raw-строки (референс — vision-агент архивного n8n «Радар трендов»). Контракт честности вшит в схему: каждый факт ссылается на конкретное медиа, гипотезы структурно отделены от фактов, observed_media=none запрещает визуальные выводы, по одной обложке нельзя цитировать кадры.",
+  "type": "object",
+  "required": [
+    "observed_media", "visual_evidence", "visual_hook", "screen_text",
+    "shooting_format", "main_emotion", "formatting_pattern",
+    "visual_hypotheses", "unsupported_visual_claims",
+    "engine", "model", "analyzed_at"
+  ],
+  "properties": {
+    "observed_media": {"enum": ["cover", "frames", "none"]},
+    "visual_evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["fact", "media_ref"],
+        "properties": {
+          "fact": {"type": "string", "minLength": 1},
+          "media_ref": {"type": "string", "pattern": "^(cover|frame:[0-9]+)$"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "visual_hook": {"type": "string"},
+    "screen_text": {"type": "array", "items": {"type": "string"}},
+    "shooting_format": {"type": "string"},
+    "main_emotion": {"type": "string"},
+    "formatting_pattern": {"type": "string"},
+    "visual_hypotheses": {
+      "description": "Осторожные гипотезы по капшену/метрикам — единственное место для них; в visual_evidence они не мигрируют.",
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "unsupported_visual_claims": {
+      "description": "Что нельзя утверждать по этим данным (по одной обложке — музыка, монтаж, динамика, переходы, первые секунды, структура сцен; по субвыборке кадров — музыка, темп, микро-события).",
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "narrative_structure": {
+      "description": "Только при observed_media=frames: развитие ролика по поданным кадрам (структура, смены сцен, где стоит хук).",
+      "type": "string"
+    },
+    "cta_visual": {
+      "description": "Только при observed_media=frames: что видно в финальных кадрах (развязка, CTA).",
+      "type": "string"
+    },
+    "frames_analyzed": {
+      "description": "Только при observed_media=frames: сколько кадров движок реально прочитал (материал аудита честности и пилота).",
+      "type": "integer",
+      "minimum": 0
+    },
+    "engine": {"type": "string", "minLength": 1},
+    "model": {"type": "string", "minLength": 1},
+    "analyzed_at": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T"}
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {"properties": {"observed_media": {"const": "none"}}},
+      "then": {"properties": {"visual_evidence": {"maxItems": 0}}}
+    },
+    {
+      "if": {"properties": {"observed_media": {"const": "cover"}}},
+      "then": {
+        "properties": {
+          "visual_evidence": {
+            "items": {"properties": {"media_ref": {"const": "cover"}}}
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"observed_media": {"enum": ["cover", "none"]}}},
+      "then": {
+        "not": {
+          "anyOf": [
+            {"required": ["narrative_structure"]},
+            {"required": ["cta_visual"]},
+            {"required": ["frames_analyzed"]}
+          ]
+        }
+      }
+    }
+  ]
+}

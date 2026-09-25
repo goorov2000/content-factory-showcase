@@ -1,0 +1,6 @@
+# сгенерировано `cf codex-sync` — не править руками
+interface:
+  display_name: "Eval Agent"
+  short_description: "Eval Agent - еженедельная оценка performance по prompt_version"
+policy:
+  allow_implicit_invocation: false

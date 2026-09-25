@@ -1,0 +1,6 @@
+# сгенерировано `cf codex-sync` — не править руками
+interface:
+  display_name: "Content Factory"
+  short_description: "Content Factory - запуски, pending-ревью, proposals, активные промпты"
+policy:
+  allow_implicit_invocation: false

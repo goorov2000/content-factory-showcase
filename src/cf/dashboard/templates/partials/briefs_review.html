@@ -1,0 +1,200 @@
+{# P5.5: инлайн-очередь ревью. Контейнер #briefs-review сам себя заменяет при
+   hx-post решения (outerHTML), поэтому и страница briefs.html, и ответ post_review
+   рендерят ровно этот партиал — без полной перерисовки страницы.
+   Фаза 3 UX-доводки: смысл вперёд, ID — служебная мелочь под катом. #}
+{# aria-live тут не работал: регион приезжает в DOM вместе с содержимым (своп
+   outerHTML), а такие регионы ассистивные технологии не озвучивают — да и
+   зачитывать целую таблицу не нужно. Объявление живёт в стабильном #review-say
+   на странице briefs.html, туда кладётся одна фраза после свопа. #}
+<div id="briefs-review">
+{% if runlog_warning %}<div class="banner warn">{{ runlog_warning }}</div>{% endif %}
+{% if error %}
+<div class="banner error">Не удалось загрузить сценарии. Обновите страницу или попробуйте позже.
+  <details class="tech"><summary>Техническая причина</summary><span class="mono">{{ error }}</span></details></div>
+{% elif not briefs %}
+<div class="empty-state">Сценариев с таким статусом нет.<br>
+  Готовые к съёмке — в <a href="/briefs/shooting-list">очереди съёмки</a>.</div>
+{% else %}
+<div class="briefs-layout">
+  <div class="card card--table">
+    <table class="queue">
+    <caption class="sr-only">Очередь сценариев</caption>
+      {# Сортировка по дате (решение владельца 2026-07-28): по умолчанию свежие
+         сверху, заголовок колонки переключает направление. Это ссылка, а не
+         кнопка на JS: порядок должен переживать перезагрузку и жить в адресе,
+         чтобы им можно было поделиться. aria-sort — только у той колонки, по
+         которой список действительно упорядочен. #}
+      {% set flip = "date-asc" if sort == "date-desc" else "date-desc" %}
+      <thead><tr><th scope="col">Идея ролика</th><th scope="col">Тема</th><th scope="col">Статус</th>
+        <th scope="col" aria-sort="{{ 'descending' if sort == 'date-desc' else 'ascending' }}">
+          <a class="th-sort" href="/briefs?status={{ status_filter }}&amp;sort={{ flip }}{% if selected %}&amp;id={{ selected.brief_id }}{% endif %}">Дата
+            <span aria-hidden="true">{{ "↓" if sort == "date-desc" else "↑" }}</span>
+            <span class="sr-only">— сейчас {{ "сначала новые" if sort == "date-desc" else "сначала старые" }}, переключить</span></a></th></tr></thead>
+      <tbody>
+        {% for b in briefs %}
+        <tr class="{{ 'selected' if selected and b.brief_id == selected.brief_id }}">
+          {# data-pending-link: якорь pending-строки — цель хоткея → «следующий pending». #}
+          <td><a {% if b.review_status == "pending" %}data-pending-link{% endif %} href="/briefs?status={{ status_filter }}&amp;sort={{ sort }}&amp;id={{ b.brief_id }}">{{ b.hook }}</a></td>
+          <td><span class="tag">{{ b.niche | niche_label }}</span></td>
+          <td>
+            {% if b.published %}<span class="badge published">Опубликован</span>
+            {% else %}<span class="badge {{ b.review_status }}">{{ {"pending":"Ожидает","approved":"Одобрен","rejected":"Отклонён","revised":"Доработка"}.get(b.review_status, b.review_status) }}</span>{% endif %}
+            {# в узкой ячейке списка — короткая пилюля, полный смысл в title и в карточке #}
+            {% if b.reviewer_notes and (b.reviewer_notes|string).startswith("авто-одобрен") %}<span class="pill auto" title="Одобрено системой — человек этот сценарий не смотрел">без проверки</span>{% endif %}</td>
+          <td class="mono">{{ b.generated_at | fmt_date }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if selected %}
+  <div class="card">
+    <div class="eyebrow">СЦЕНАРИЙ РОЛИКА</div>
+    {# tabindex=-1: после решения фокус клавиатуры уводится сюда, иначе он
+       улетал на <body> и до следующего сценария приходилось табать заново #}
+    <h2 class="hook-title" id="brief-hook" tabindex="-1">{{ selected.hook }}</h2>
+    <div class="field-label">СЦЕНАРИЙ</div>
+    <div class="script-box">{{ selected.script }}</div>
+    <div class="field-label mt-16">ПОЧЕМУ ЭТО СРАБОТАЕТ</div>
+    {% if origin %}
+    {% if origin.formula %}
+    {% if origin.formula.missing %}
+    <div class="muted-line">Обоснование недоступно — проверьте сценарий внимательнее.</div>
+    {% else %}
+    {% if origin.formula.problem %}
+    <div class="muted-line">{{ origin.formula.problem }}</div>
+    {% endif %}
+    <div class="muted-line">Надёжность приёма: {{ origin.formula.confidence | confidence_label or "не указана" }}
+      · тема: {{ origin.formula.niche | niche_label }}</div>
+    {% endif %}
+    {% endif %}
+    {% for p in origin.patterns %}
+    <div class="report report--tight">
+      <div>{% if p.platform %}<span class="tag">{{ p.platform }}</span> {% endif %}{{ p.description }}</div>
+      <div class="metric-line">
+        {{ p.evidence | length }} роликов{% if p.avg_views %} · в среднем просмотров {{ p.avg_views | fmt_views }}{% endif %}{% if p.avg_er %} · вовлечённость {{ p.avg_er | fmt_pct }}{% endif %}</div>
+      {% if p.evidence %}<div class="muted-line">Похожие ролики — посмотрите для примера:</div>{% endif %}
+      {% for e in p.evidence %}
+      <div class="url-row">{% if e.url.startswith("http://") or e.url.startswith("https://") %}<a href="{{ e.url }}" target="_blank" rel="noopener">{{ e.url | link_label }}</a>{% else %}{{ e.url }}{% endif %}
+        {% if e.is_reference %}<span class="tag">пример этого сценария</span>{% endif %}</div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+    {% if origin.missing_pattern_ids %}
+    <div class="muted-line">Часть обоснования недоступна — примеров к этому приёму не сохранилось.</div>
+    {% endif %}
+    {% if origin.unmatched_refs %}
+    <div class="report report--tight">
+      <div class="muted-line">Эти ссылки не подтверждены лабораторией — берите как идею, а не как гарантию:</div>
+      {% for url in origin.unmatched_refs %}
+      <div class="url-row">{% if url.startswith("http://") or url.startswith("https://") %}<a href="{{ url }}" target="_blank" rel="noopener">{{ url | link_label }}</a>{% else %}{{ url }}{% endif %}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="muted-line">У этого сценария не сохранилось обоснование. Отнеситесь осторожно —
+      уточните у автора системы перед съёмкой.</div>
+    {% if references %}
+    <div class="field-label mt-12">ПРИМЕРЫ РОЛИКОВ</div>
+    {% for url in references %}
+    <div class="url-row">{% if url.startswith("http://") or url.startswith("https://") %}<a href="{{ url }}" target="_blank" rel="noopener">{{ url | link_label }}</a>{% else %}{{ url }}{% endif %}</div>
+    {% endfor %}
+    {% endif %}
+    {% endif %}
+    {% if selected.review_status == "pending" %}
+    {# P5.5: hx-post — своп #briefs-review на месте (список+карточка), без перерисовки.
+       method/action сохранены для прогрессивного улучшения (JS отключён -> обычный POST).
+       data-hotkey — цели клавиш A/R (см. скрипт хоткеев в briefs.html). #}
+    {# hx-disabled-elt: гаснут ОБЕ кнопки на время запроса. Решение пишется в
+       Sheets и в Run Log — второй клик давал вторую запись. Селектор без
+       префикса «find»: htmx 1.9 разворачивает «find X» в querySelector (ОДИН
+       элемент) и гасил только «Одобрить». #}
+    <form method="post" action="/briefs/{{ selected.brief_id }}/review"
+          hx-post="/briefs/{{ selected.brief_id }}/review"
+          hx-target="#briefs-review" hx-swap="outerHTML"
+          hx-disabled-elt="#review-actions button">
+      {# Порядок очереди едет вместе с решением: без него свопнутый список
+         прыгал бы к умолчанию под руками у продюсера. #}
+      <input type="hidden" name="sort" value="{{ sort }}">
+      {# Фаза 6: подпись поля — настоящий <label for>: клик фокусирует поле, скринридер
+         называет его. Карточка рендерится по одному сценарию, поэтому id статичны. #}
+      <label class="field-label mt-16" for="review-notes">ЗАМЕТКА РЕВЬЮЕРА</label>
+      <textarea class="note" id="review-notes" name="notes" placeholder="Почему одобряем или отклоняем…"></textarea>
+      {# P5.12: код причины reject — стабильный ключ группировки rejection-history.
+         Пустой дефолт не мешает хоткею A/R (approve код игнорирует; reject без кода —
+         мягкая деградация к свободной заметке). #}
+      <label class="field-label mt-12" for="reject-reason">КОД ПРИЧИНЫ ОТКЛОНЕНИЯ</label>
+      <select class="reason-input reason-select" id="reject-reason" name="reason_code">
+        <option value="">— без кода (свободная заметка) —</option>
+        {% for code, label in reason_codes.items() %}
+        <option value="{{ code }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+      <div class="actions" id="review-actions">
+        <button class="btn-primary" type="submit" name="decision" value="approved" data-hotkey="approve">✓ Одобрить</button>
+        <button class="btn-danger-outline" type="submit" name="decision" value="rejected" data-hotkey="reject">✕ Отклонить</button>
+      </div>
+      {# хоткеи существовали, но нигде не были подписаны — знал о них только автор #}
+      <p class="hint mt-8">Быстрые клавиши: <b>A</b> — одобрить, <b>R</b> — отклонить,
+        <b>→</b> — следующий сценарий.</p>
+    </form>
+    {% else %}
+    <div class="field-label mt-16">РЕШЕНИЕ</div>
+    <div>
+      {% if selected.published %}<span class="badge published">Опубликован</span>
+      {% else %}<span class="badge {{ selected.review_status }}">{{ {"approved":"Одобрен","rejected":"Отклонён","revised":"Доработка"}.get(selected.review_status, selected.review_status) }}</span>{% endif %}
+      {% if selected.reviewer_notes and (selected.reviewer_notes|string).startswith("авто-одобрен") %}<span class="pill auto" title="Одобрено системой — человек этот сценарий не смотрел">без проверки человеком</span>{% endif %}
+      {% if selected.reviewer_notes %}<span class="muted-line"> — {{ selected.reviewer_notes }}</span>{% endif %}</div>
+    {% if selected.published %}
+    <div class="field-label mt-14">ОПУБЛИКОВАННЫЙ РОЛИК</div>
+    {% for r in selected_reels %}
+    <div class="url-row">
+      {% if (r.post_url or "").startswith("http://") or (r.post_url or "").startswith("https://") %}<a href="{{ r.post_url }}" target="_blank" rel="noopener">{{ r.post_url | link_label }}</a>{% else %}{{ r.post_url }}{% endif %}
+      {% if r.published_at %}<span class="mono meta-inline"> · {{ r.published_at | fmt_date }}</span>{% endif %}</div>
+    {% endfor %}
+    {% elif selected.review_status == "approved" %}
+    <form method="post" action="/briefs/{{ selected.brief_id }}/published" class="mt-14">
+      <label class="field-label" for="publish-url">ССЫЛКА НА ОПУБЛИКОВАННЫЙ РОЛИК</label>
+      <input class="reason-input w-full" id="publish-url" type="url" name="url" required
+             placeholder="https://tiktok.com/@…/video/…">
+      {# Аккаунт публикации (UTM-контур): по нему считаются переходы и деньги.
+         Предлагаются только включённые слоты реестра accounts; пустой реестр не
+         прячет форму — публикация без привязки легальна, но причина названа. #}
+      {% if accounts %}
+      <label class="field-label mt-12" for="publish-account">АККАУНТ ПУБЛИКАЦИИ</label>
+      <select class="reason-input reason-select" id="publish-account" name="account">
+        {% for a in accounts %}
+        <option value="{{ a.slug }}">{{ a.slug }}{% if a.handle %} — {{ a.handle }}{% endif %}</option>
+        {% endfor %}
+      </select>
+      {% else %}
+      <p class="hint mt-8">Публикация запишется без аккаунта: реестр аккаунтов пуст —
+        заполни accounts в cf.config.json.</p>
+      {% endif %}
+      <label class="sr-only" for="publish-notes">Заметки со съёмки</label>
+      <textarea class="note mt-8" id="publish-notes" name="notes"
+                placeholder="Заметки со съёмки (необязательно)…"></textarea>
+      <div class="actions"><button class="btn-primary" type="submit">✓ Опубликован</button></div>
+    </form>
+    {% endif %}
+    <form method="post" action="/briefs/{{ selected.brief_id }}/review" class="mt-12">
+      <input type="hidden" name="decision" value="pending">
+      <button class="btn-danger-outline" type="submit">↺ Отменить решение</button>
+    </form>
+    {% endif %}
+    {# Служебные ID — под катом: продюсеру не нужны, владельцу нужны для трассировки. #}
+    <details class="tech"><summary>Служебные ID</summary>
+      <div class="mono">сценарий: {{ selected.brief_id }}</div>
+      <div class="mono">рецепт: {{ selected.formula_id or "—" }}</div>
+      {% if origin and origin.formula and not origin.formula.missing %}
+      <div class="mono">версия рецепта: v{{ origin.formula.version }} · утверждён {{ origin.formula.approved_at | fmt_date }}</div>
+      {% endif %}
+      {% for pid in origin.missing_pattern_ids if origin %}
+      <div class="mono">приём без файла: {{ pid }}</div>
+      {% endfor %}
+    </details>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+</div>

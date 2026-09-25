@@ -1,0 +1,24 @@
+[
+  {
+    "query": "примерхэштег",
+    "kind": "hashtag",
+    "niche": "мужские-образы",
+    "status": "active",
+    "origin": "operator",
+    "added_at": "2026-07-01",
+    "runs_count": 3,
+    "last_run_at": "2026-07-20T08:00:00+00:00",
+    "rows_passed_gate": 12
+  },
+  {
+    "query": "пример поисковый запрос",
+    "kind": "search",
+    "niche": "мужские-образы",
+    "status": "candidate",
+    "origin": "tuner",
+    "added_at": "2026-07-15",
+    "runs_count": 1,
+    "last_run_at": "2026-07-20T08:00:00+00:00",
+    "rows_passed_gate": 2
+  }
+]

@@ -1,0 +1,9 @@
+[Unit]
+Description=CF: дозамер метрик (CF 04) (расписание)
+
+[Timer]
+OnCalendar=*-*-* 08:40:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

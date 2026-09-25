@@ -1,0 +1,10 @@
+# Рендерится install.sh: __HASH__ -> bcrypt-хэш пароля из
+# ~/.cf/secrets/dashboard-password.txt (caddy hash-password).
+# HTTPS — автоматом через Let's Encrypt; наружу торчит только Caddy,
+# дашборд слушает 127.0.0.1:8787 (спека §1).
+cf.example.com {
+	basic_auth {
+		<user> __HASH__
+	}
+	reverse_proxy 127.0.0.1:8787
+}

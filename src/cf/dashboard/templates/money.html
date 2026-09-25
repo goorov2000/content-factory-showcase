@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% block content %}
+{# Страница «Деньги» (UTM-контур, тикет 04) — общая правда владельца и продюсера:
+   расчётный лист месяца, переходы по аккаунтам, реестр заказов (партиал тикета 03)
+   и ссылки UTM-конвенции для bio. Контекст — sections.money_context. #}
+<header class="page-head">
+  <div>
+    <div class="eyebrow">ПЕРЕХОДЫ, ЗАКАЗЫ И РАСЧЁТ ПРОДЮСЕРА</div>
+    <h1>ДЕНЬГИ</h1>
+    <p class="lead">Одна цифра на двоих: уники по UTM из Метрики, подтверждённые
+      продажи и расчётный лист месяца.</p>
+  </div>
+  <nav class="chips" aria-label="Месяц расчётного листа">
+    {% for m in months %}
+    <a class="chip {{ 'active' if m == month }}" href="/money?month={{ m }}"{{ ' aria-current="true"' | safe if m == month }}>{{ m }}</a>
+    {% endfor %}
+    {% if not error and not reg_empty %}
+    <a class="chip" href="/money?month={{ month }}&amp;format=md">Скачать лист</a>
+    {% endif %}
+  </nav>
+</header>
+
+{% if runlog_warning %}<div class="banner warn">{{ runlog_warning }}</div>{% endif %}
+{% if error %}
+<div class="banner error">Не удалось загрузить данные о деньгах. Обновите страницу или попробуйте позже.
+  <details class="tech"><summary>Техническая причина</summary><span class="mono">{{ error }}</span></details></div>
+{% else %}
+
+{% if reg_empty %}
+{# Пустой реестр не прячет раздел молча — причина вместо секций (образец —
+   тикет 01: формы публикации при пустых accounts). Заказы ниже остаются:
+   у партиала своя честная деградация. #}
+<div class="empty-state">Реестр аккаунтов пуст — расчётный лист, переходы и
+  ссылки считать не по чему.<br>Заполни accounts в cf.config.json: слаг станет
+  utm_campaign ссылок, и переходы начнут матчиться на аккаунты.</div>
+{% else %}
+
+<section class="card">
+  <div class="field-label">РАСЧЁТНЫЙ ЛИСТ — {{ month }}</div>
+  <p class="hint">Сформирован {{ sheet.generated_at }} · ставки пилотные:
+    {{ sheet.rates.per_transition_rub | fmt_money }} ₽ за уникальный переход,
+    {{ sheet.rates.sales_percent | fmt_money }}% с подтверждённых продаж,
+    холд {{ sheet.rates.hold_days }} дн.</p>
+  {% if not sheet.accounts and not sheet.sales %}
+  <div class="empty-state">Нулевой месяц: переходов по меткам реестра и созревших
+    продаж пока нет. Это состояние, а не ошибка — цифры появятся со сбором
+    Метрики и решениями по заказам.</div>
+  {% endif %}
+  <table class="queue">
+    <caption class="sr-only">Расчётный лист {{ month }}</caption>
+    <thead><tr><th scope="col">Строка</th><th class="num" scope="col">Расчёт</th>
+      <th class="num" scope="col">Сумма</th></tr></thead>
+    <tbody>
+      {% for a in sheet.accounts %}
+      <tr>
+        <td>Переходы — <span class="tag">{{ a.slug }}</span></td>
+        <td class="mono num">{{ a.users }} × {{ sheet.rates.per_transition_rub | fmt_money }} ₽</td>
+        <td class="mono num">{{ a.amount | fmt_money }} ₽</td>
+      </tr>
+      {% endfor %}
+      {% for s in sheet.sales %}
+      <tr>
+        <td>Продажа <span class="mono">{{ s.order_id }}</span> от {{ s.order_date | fmt_date }}</td>
+        <td class="mono num">{{ s.revenue | fmt_money }} ₽ × {{ sheet.rates.sales_percent | fmt_money }}%</td>
+        <td class="mono num">{{ s.amount | fmt_money }} ₽</td>
+      </tr>
+      {% endfor %}
+      {% if sheet.fix is not none %}
+      <tr><td>Фикс месяца</td><td class="num"></td>
+        <td class="mono num">{{ sheet.fix | fmt_money }} ₽</td></tr>
+      {% endif %}
+      <tr><td><strong>Итого</strong></td><td class="num"></td>
+        <td class="mono num"><strong>{{ sheet.total | fmt_money }} ₽</strong></td></tr>
+    </tbody>
+  </table>
+  {% for h in sheet.held %}
+  <div class="row-note">Заказ <span class="mono">{{ h.order_id }}</span>
+    ({{ h.revenue | fmt_money }} ₽, от {{ h.order_date | fmt_date }})
+    — в холде, войдёт в следующий лист (созреет {{ h.matures_at | fmt_date }}).</div>
+  {% endfor %}
+  {% if sheet.candidates.count %}
+  <div class="row-note">Ждут решения: {{ sheet.candidates.count }}
+    {{ sheet.candidates.count | plural_ru("заказ", "заказа", "заказов") }} на
+    {{ sheet.candidates.revenue | fmt_money }} ₽ — подтвердите или отклоните их
+    в секции «Заказы» ниже.</div>
+  {% endif %}
+  {% for w in sheet.warnings %}<div class="banner warn">{{ w }}</div>{% endfor %}
+  {# Сноска БЕЗУСЛОВНА (решение гриля №7): без неё цифры читаются как
+     «канал слабее, чем есть». #}
+  <p class="hint">{{ lower_bound_note }}</p>
+</section>
+
+<section class="card card--table">
+  <div class="field-label">ПЕРЕХОДЫ ПО АККАУНТАМ — {{ month }}</div>
+  {% if transitions %}
+  <table class="queue">
+    <caption class="sr-only">Переходы по аккаунтам за месяц</caption>
+    <thead><tr><th scope="col">Аккаунт</th><th scope="col">Площадка</th>
+      <th class="num" scope="col">Уники месяца</th>
+      <th class="num" scope="col">Дней с переходами</th></tr></thead>
+    <tbody>
+      {% for t in transitions %}
+      <tr>
+        <td><span class="tag">{{ t.slug }}</span></td>
+        <td>{{ t.platform or "—" }}</td>
+        {# Биллинговая цифра из месячной строки Метрики — НЕ сумма дневных. #}
+        <td class="mono num">{{ t.users | fmt_views }}</td>
+        <td class="mono num">{{ t.days_active }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">Переходов из Метрики за этот месяц ещё нет.<br>
+    Строки появятся после утреннего сбора из Метрики — когда ссылки из
+    генератора ниже встанут в bio.</div>
+  {% endif %}
+</section>
+
+{# Секция «По роликам» (тикет 05): какие ролики ведут на сайт. Точные числа —
+   факт Метрики (метка utm_content), оценка — модель (бейдж), в расчётный лист
+   продюсера она не входит (решение гриля №5). Контекст — _per_reel_context. #}
+<section class="card card--table">
+  <div class="field-label">ПО РОЛИКАМ — {{ month }}</div>
+  <p class="hint">Точные переходы — по ссылкам с меткой ролика (utm_content);
+    «оценка» — остаток переходов аккаунта за день, разложенный по роликам
+    последних {{ per_reel.window_days }} дней пропорционально просмотрам.
+    Оценка — аналитика: в расчётный лист продюсера она не входит.</p>
+  {% if per_reel.rows %}
+  <table class="queue">
+    <caption class="sr-only">Переходы и заказы по роликам за месяц</caption>
+    <thead><tr><th scope="col">Ролик</th><th scope="col">Аккаунт</th>
+      <th class="num" scope="col">Точные</th>
+      <th class="num" scope="col">Оценка</th>
+      <th class="num" scope="col">Заказы</th>
+      <th class="num" scope="col">Выручка</th></tr></thead>
+    <tbody>
+      {% for r in per_reel.rows %}
+      <tr>
+        <td class="mono">{{ r.reel_id }}</td>
+        <td>{% if r.account %}<span class="tag">{{ r.account }}</span>{% else %}—{% endif %}</td>
+        <td class="mono num">{{ r.clicks_exact }}</td>
+        {# Оценочное число визуально отличимо от точного — бейдж «оценка». #}
+        <td class="mono num">{% if r.estimated %}{{ r.clicks_estimated }}
+          <span class="badge pending">оценка</span>{% else %}0{% endif %}</td>
+        <td class="mono num">{{ r.orders }}</td>
+        <td class="mono num">{{ r.revenue | fmt_money }} ₽</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if per_reel.unattributed %}
+  <div class="row-note">Не разложено по роликам: {{ per_reel.unattributed }}
+    {{ per_reel.unattributed | plural_ru("переход", "перехода", "переходов") }} —
+    в эти дни у аккаунтов не было роликов моложе
+    {{ per_reel.window_days }} дней.</div>
+  {% endif %}
+  {% else %}
+  <div class="empty-state">По-роликовых переходов за этот месяц нет.<br>
+    Точные появятся, когда под роликами встанут ссылки с меткой из
+    конструктора ниже; оценка — когда публикации получат аккаунт и попадут
+    в окно {{ per_reel.window_days }} дней.
+    {% if per_reel.unattributed %}Пока не разложено по роликам:
+    {{ per_reel.unattributed }}
+    {{ per_reel.unattributed | plural_ru("переход", "перехода", "переходов") }}.{% endif %}</div>
+  {% endif %}
+</section>
+
+{% endif %}
+
+<section class="card">
+  <div class="field-label">ЗАКАЗЫ</div>
+  <p class="hint">Кандидаты из Метрики и ручные заказы. Подтверждённая выручка —
+    единственное, с чего считаются проценты с продаж.</p>
+</section>
+{% include "partials/orders_section.html" %}
+
+{% if not reg_empty %}
+<section class="card">
+  <div class="field-label">ССЫЛКИ ДЛЯ BIO</div>
+  {% if links %}
+  <p class="hint">UTM-дисциплина копипастой, а не ручной сборкой параметров:
+    ссылка аккаунта уже несёт utm_source/utm_medium/utm_campaign по конвенции
+    завода. Переходы мимо этих ссылок в расчётный лист не попадают.</p>
+  {% for l in links %}
+  <div class="url-row">
+    <span class="tag">{{ l.slug }}</span>
+    <label class="sr-only" for="bio-{{ l.slug }}">Ссылка для bio аккаунта {{ l.slug }}</label>
+    <input class="reason-input mono" id="bio-{{ l.slug }}" type="text" readonly
+           value="{{ l.url }}">
+    <button class="btn-secondary btn-compact" type="button"
+            data-copy-target="bio-{{ l.slug }}">Скопировать</button>
+  </div>
+  {% endfor %}
+  <div class="field-label mt-16">ССЫЛКА ПОД РОЛИК</div>
+  <p class="hint">Метка ролика (utm_content) делает переходы под ним точными —
+    по-роликовая статистика перестаёт быть оценкой.</p>
+  <div class="url-row">
+    <label class="sr-only" for="reel-account">Аккаунт ссылки под ролик</label>
+    <select id="reel-account">
+      {% for l in links %}<option value="{{ l.slug }}">{{ l.slug }}</option>{% endfor %}
+    </select>
+    <label class="sr-only" for="reel-id-input">ID ролика</label>
+    <input class="reason-input" id="reel-id-input" type="text"
+           placeholder="ID ролика из ссылки на пост…">
+    <label class="sr-only" for="reel-link-out">Готовая ссылка под ролик</label>
+    <input class="reason-input mono" id="reel-link-out" type="text" readonly>
+    <button class="btn-secondary btn-compact" type="button"
+            data-copy-target="reel-link-out">Скопировать</button>
+  </div>
+  {% else %}
+  {# Причина вместо молча пропавшей секции — образец тикета 01. #}
+  <span class="hint">Ссылок нет: {{ links_reason }}.</span>
+  {% endif %}
+</section>
+
+{# Крошечный inline-JS по образцу briefs.html (script data-hotkeys): IIFE без
+   зависимостей. Конструктор per-reel читает готовую ссылку аккаунта из её же
+   поля — второй копии UTM-конвенции в клиенте нет. Кнопка-копия работает и без
+   clipboard API (execCommand — фолбэк для http-превью). #}
+<script data-money-links>
+(function () {
+  function el(id) { return document.getElementById(id); }
+  function rebuild() {
+    var out = el("reel-link-out"), sel = el("reel-account"), reel = el("reel-id-input");
+    if (!out || !sel) return;
+    var src = el("bio-" + sel.value);
+    var base = src ? src.value : "";
+    var id = reel ? reel.value.trim() : "";
+    out.value = id && base ? base + "&utm_content=" + encodeURIComponent(id) : base;
+  }
+  ["input", "change"].forEach(function (type) {
+    ["reel-id-input", "reel-account"].forEach(function (id) {
+      var node = el(id);
+      if (node) node.addEventListener(type, rebuild);
+    });
+  });
+  rebuild();
+  document.addEventListener("click", function (evt) {
+    var btn = evt.target && evt.target.closest ? evt.target.closest("[data-copy-target]") : null;
+    if (!btn) return;
+    var field = el(btn.getAttribute("data-copy-target"));
+    if (!field || !field.value) return;
+    function done() {
+      btn.textContent = "Скопировано";
+      setTimeout(function () { btn.textContent = "Скопировать"; }, 1500);
+    }
+    field.select();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(field.value).then(done, function () {
+        document.execCommand("copy"); done();
+      });
+    } else { document.execCommand("copy"); done(); }
+  });
+})();
+</script>
+{% endif %}
+
+{% endif %}
+{% endblock %}

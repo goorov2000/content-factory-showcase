@@ -1,0 +1,11 @@
+[Unit]
+Description=CF: архив/ретенция (старше 45д)
+After=network-online.target
+OnFailure=cf-alert@%n.service
+
+[Service]
+Type=oneshot
+User=<user>
+WorkingDirectory=/home/<user>/projects/CF
+Environment=PATH=/home/<user>/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/home/<user>/projects/CF/.venv/bin/python -m cf archive --older-than 45d --yes

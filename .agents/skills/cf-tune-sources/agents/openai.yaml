@@ -1,0 +1,6 @@
+# сгенерировано `cf codex-sync` — не править руками
+interface:
+  display_name: "Source Tuner"
+  short_description: "Source Tuner - скоринг источников сбора, proposal на обновление списков"
+policy:
+  allow_implicit_invocation: false

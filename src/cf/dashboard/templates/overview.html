@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block content %}
+{# Уборка 2026-07-28 (решения владельца, элементы 3, 5, 10–13, 16, 18, 20, 21).
+   С экрана ушли: селектор периода (период жёстко 30 дней, аналитика по периодам —
+   на «Результатах»), карточка темпа целиком (счёт недели уехал в кольца, старение —
+   подписью в плитку), строка «ждут вас» (её содержимое — в «УВЕДОМЛЕНИЯХ»),
+   лозунг «⟲ цикл замкнут», график вовлечённости и «Последние запуски» (всё про
+   прогоны собирается на «Истории задач»). #}
+<header class="page-head">
+  <div>
+    <div class="eyebrow">JE LA PECHE · CONTENT FACTORY</div>
+    <h1>ОБЗОР <span class="blue-word">ЗАВОДА</span></h1>
+  </div>
+</header>
+
+{% if error %}
+<div class="banner error">Не удалось загрузить данные. Обновите страницу или попробуйте позже.
+  <details class="tech"><summary>Техническая причина</summary><span class="mono">{{ error }}</span></details></div>
+{% else %}
+
+{# Две колонки (решение владельца 2026-07-28, С5): слева плитки и кусочки
+   сценариев, справа — узкая колонка «Конвейера» целиком (шапка, кнопка запуска,
+   лента). Лента В ПОТОКЕ: не липкая, без своего скролла. На узком экране колонка
+   уезжает НАВЕРХ, над плитками (.ov-side { order: -1 }) — 15 строк ленты не
+   должны отжимать плитки за экран. #}
+<div class="overview-cols">
+<div class="ov-main">
+
+{# Сетка плиток — три колонки, две плитки шире (решение владельца 2026-07-28):
+   «Звенья завода» занимают 1-2, «Ждут назначения» — 3, «Темп недели» — 4-5,
+   «Опубликованы» — 6. Прежняя укладка auto-fit давала три плитки в ряд и одну
+   сиротой во втором. Порядок плиток — порядок разметки: переставлять их
+   средствами grid нельзя, иначе чтение с клавиатуры и скринридером разойдётся
+   с тем, что видно глазами. #}
+<section class="stat-row">
+  {# Статистика по звеньям завода в габарите ОДНОЙ плитки (решение владельца
+     2026-07-28, элемент 6): raw ролики · темы · рецепты · сценарии. Окно —
+     скользящие 7 дней, одно на весь экран. #}
+  <div class="stat stat--wide"><div class="stat-label">ЗВЕНЬЯ ЗАВОДА · {{ metrics.window_days }} ДНЕЙ</div>
+    <div class="mini-tiles">
+      {% for key, label in [("raw", "raw ролики"), ("niches", "темы"),
+                            ("formulas", "рецепты"), ("briefs", "сценарии")] %}
+      <div class="mini-tile">
+        <div class="mini-value">{{ metrics.links_week[key] }}</div>
+        <div class="mini-label">{{ label }}</div>
+      </div>
+      {% endfor %}
+    </div></div>
+  {# Одобренные сценарии без исполнителя. Это БЭКЛОГ, а не окно: сценарий
+     недельной давности из очереди никуда не девается. Прежняя плитка «Сценарии
+     ждут внимания» показывала 0 и была формально права — все ждущие отложены
+     капом рецепта, решать по ним нечего. Правда была, но не вся. #}
+  <div class="stat"><div class="stat-label">ЖДУТ НАЗНАЧЕНИЯ ИСПОЛНИТЕЛЯ</div>
+    <div class="stat-value">{{ metrics.awaiting_assignment }}</div>
+    {# Число старения показываем ВСЕГДА, включая ноль: «0 ждут дольше недели» —
+       это ответ, а исчезнувшая подпись читается как «данных нет». #}
+    <div class="stat-sub">одобрены, исполнитель не назначен · {{ metrics.approved_no_reel_over_ndays }} ждут дольше {{ metrics.aging_days }} дн.</div></div>
+  {# «Темп недели»: три полукольца радугой, у каждого своя цель. Конверсия
+     читается как разница колец — отдельной строки для неё больше нет.
+     Рисунок aria-hidden: смысл несут числа и подписи текстом ниже, иначе кольца
+     остались бы единственным носителем. #}
+  <div class="stat stat--wide"><div class="stat-label">ТЕМП НЕДЕЛИ · {{ metrics.window_days }} ДНЕЙ</div>
+    <div class="rings">
+      <svg class="rings-art" viewBox="{{ ring_viewbox }}" aria-hidden="true" focusable="false">
+        {% for r in rings %}
+        <path class="ring-track" d="{{ ring_path(r.radius) }}" stroke-width="{{ ring_stroke }}"></path>
+        <path class="ring-fill ring-{{ r.key }}" d="{{ ring_path(r.radius) }}"
+              stroke-width="{{ ring_stroke }}" stroke-dasharray="{{ r.dash }}"></path>
+        {% endfor %}
+      </svg>
+      <ul class="rings-legend">
+        {% for r in rings %}
+        <li><span class="ring-dot ring-{{ r.key }}" aria-hidden="true"></span>
+          <span class="ring-name">{{ r.label }}</span>
+          <span class="ring-value mono">{{ r.value }}/{{ r.target }}</span></li>
+        {% endfor %}
+      </ul>
+    </div></div>
+  {# Ролики, получившие ссылку. Ноль — не дефект, а правило №2: съёмок ещё не
+     было, и показать это честно важнее, чем спрятать плитку. #}
+  <div class="stat"><div class="stat-label">ОПУБЛИКОВАНЫ</div>
+    <div class="stat-value">{{ metrics.reels_published_week }}</div>
+    <div class="stat-sub">вышли со ссылкой за {{ metrics.window_days }} дней</div></div>
+</section>
+
+{# Красная полоса ворот стала тостом (решение владельца 2026-07-28, элемент 14):
+   полоса сдвигала всё, что ниже, каждый раз, когда конвейер вставал. Сигнал не
+   потерян и не ослаблен — он приходит тостом (base.html) и висит строкой в
+   «Уведомлениях», пока ворота держат, а уходит сам после расшивки. #}
+
+{# Кусочки сценариев под плитками (решение владельца 2026-07-28): экран
+   заканчивался плитками, а ниже до конца страницы было пусто. Здесь ровно
+   кусочки — заголовок и первые строки: решение принимается на «Сценариях», где
+   рядом обоснование и кнопки, поэтому карточка целиком ведёт туда ссылкой. #}
+<section class="card">
+  <div class="card-head">
+    <div><h2 class="card-title">Сценарии завода</h2>
+      <div class="card-sub">кусочки свежих текстов · ждущие решения первыми</div></div>
+    <a class="chip" href="/briefs">все сценарии →</a>
+  </div>
+  {% if brief_peek %}
+  <div class="peek-grid">
+    {% for b in brief_peek %}
+    <a class="peek{{ ' peek--waiting' if b.waiting }}" href="/briefs?status=all&amp;id={{ b.brief_id }}">
+      <div class="peek-top">
+        <span class="tag">{{ b.niche | niche_label }}</span>
+        {% if b.published %}<span class="badge published">Опубликован</span>
+        {% else %}<span class="badge {{ b.review_status }}">{{ b.review_status | brief_status_label }}</span>{% endif %}
+      </div>
+      <div class="peek-hook">{{ b.hook or "Без заголовка" }}</div>
+      {# Пустой текст показываем словами, а не пустотой: «сценарий без текста» —
+         это дефект строки, и молча выглядеть он не должен (правило №2). #}
+      <div class="peek-script">{{ b.snippet or "текста сценария нет" }}</div>
+      <div class="peek-foot mono">{{ b.generated_at | fmt_date }}</div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">Сценариев ещё нет. Они появятся, когда конвейер дойдёт
+    до шага «Сценарии» — следите за лентой справа.</div>
+  {% endif %}
+</section>
+
+</div>
+{# Правая колонка: заголовок «Конвейер», кнопка полного цикла и сама лента —
+   одной карточкой (решение владельца 2026-07-28). Раньше шапка с кнопкой жила
+   слева, отдельной карточкой, и запуск был оторван от того, что он двигает.
+   Кнопка одна и стоит сверху колонки. #}
+<aside class="ov-side" aria-label="Конвейер">
+  <section class="card">
+    <div class="card-head">
+      <div><h2 class="card-title">Конвейер</h2>
+        <div class="card-sub">путь от собранного ролика до сценария и дальше · счётчики за текущий прогон</div></div>
+      {# Клик = платный прогон агентов, а цикл и так идёт сам в 07:30
+         (cf-cycle.timer). Подтверждение — одно правило на все платные кнопки
+         (static/confirm.js). #}
+      {% if runner %}<form method="post" action="/cycle/run"
+        data-confirm="Запустить полный цикл? Это платный прогон агентов — цикл и так идёт сам каждое утро."><button
+        class="btn-primary" type="submit">▶ Полный цикл</button></form>{% endif %}
+    </div>
+    {% include "partials/stages.html" %}
+  </section>
+</aside>
+</div>
+{% endif %}
+{% endblock %}

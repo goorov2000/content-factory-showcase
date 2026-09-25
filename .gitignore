@@ -1,0 +1,24 @@
+agent-runtime/
+secrets/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+
+# артефакты playwright-MCP (скриншоты ревью UI) — не версионируются
+.playwright-mcp/
+
+# резервные копии редакторов/инструментов. Особый случай — .claude/settings.json.bak:
+# он консервировал нерабочие Write(...) из deny, снятые коммитом 776cd77.
+*.bak
+
+# личные оверрайды инструкций агентов: Codex читает их ВМЕСТО AGENTS.md —
+# постоянные правила живут только в AGENTS.md
+AGENTS.override.md
+
+# кэш graphify без самого графа: скилл graphify считает наличие каталога признаком готового графа
+graphify-out/
+
+# рабочие бизнес-таблицы в корне (вердикты владельца и т.п.) — копии живут в agent-runtime/research/
+/*.xlsx

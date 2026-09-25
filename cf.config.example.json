@@ -1,0 +1,190 @@
+{
+  "spreadsheet_id": "<SPREADSHEET_ID_RAW>",
+  "service_account_file": "~/.cf/secrets/service-account.json",
+  "n8n": {
+    "base_url": "https://n8n.example.com",
+    "api_key_file": "~/.cf/secrets/n8n-api-key.txt",
+    "webhook_token_file": "~/.cf/secrets/webhook-token.txt"
+  },
+  "dashboard": {
+    "port": 8787,
+    "weekly_target": 70,
+    "notify_url": "",
+    "workflows": {
+      "raw": [
+        "https://n8n.example.com/webhook/cf-raw-tiktok",
+        "https://n8n.example.com/webhook/cf-raw-instagram",
+        "https://n8n.example.com/webhook/cf-snowball-tiktok"
+      ],
+      "stats": "https://n8n.example.com/webhook/cf-stats"
+    },
+    "public_origin": "https://cf.example.com",
+    "creator_slots": [
+      "криэйтор-1",
+      "криэйтор-2"
+    ],
+    "demo_as_published": false,
+    "fanout": {
+      "exclude_niches": [
+        "женская-мода",
+        "знаменитости-мода",
+        "лайфстайл-мотивация",
+        "обувь",
+        "спорт-фитнес",
+        "уход-грумминг",
+        "стритвир"
+      ],
+      "briefs_per_formula": 1,
+      "approve_cap": 5,
+      "autocontinue": true
+    }
+  },
+  "gates": {
+    "policy": {
+      "recipes": "auto",
+      "prompt": "auto"
+    }
+  },
+  "vision": {
+    "engine": "headless-subscription",
+    "model": "claude-sonnet-5",
+    "batch_limit": 10,
+    "frames_enabled": true,
+    "frames_cap": 30
+  },
+  "accounts": [
+    {
+      "slug": "tiktok-1",
+      "platform": "tiktok",
+      "handle": "PLACEHOLDER",
+      "active": false
+    },
+    {
+      "slug": "tiktok-2",
+      "platform": "tiktok",
+      "handle": "PLACEHOLDER",
+      "active": false
+    },
+    {
+      "slug": "tiktok-3",
+      "platform": "tiktok",
+      "handle": "PLACEHOLDER",
+      "active": false
+    },
+    {
+      "slug": "instagram-1",
+      "platform": "instagram",
+      "handle": "PLACEHOLDER",
+      "active": false
+    },
+    {
+      "slug": "instagram-2",
+      "platform": "instagram",
+      "handle": "PLACEHOLDER",
+      "active": false
+    }
+  ],
+  "tabs": {
+    "raw_tiktok": "CF Raw TikTok",
+    "raw_instagram": "CF Raw Instagram",
+    "briefs": "CF Creative Briefs",
+    "reels": "CF Published Reels",
+    "performance": "CF Performance",
+    "prompt_versions": "CF Prompt Versions",
+    "run_log": "CF Run Log",
+    "seeds": "CF Seeds",
+    "utm_traffic": "CF UTM Traffic",
+    "orders": "CF Orders"
+  },
+  "column_aliases": {
+    "raw_tiktok": {
+      "source_url": "url",
+      "account": "author",
+      "posted_at": "created_at"
+    },
+    "raw_instagram": {
+      "source_url": "url",
+      "account": "author",
+      "posted_at": "created_at"
+    },
+    "briefs": {
+      "script": "script_text",
+      "references": "reference_url",
+      "review_status": "human_status",
+      "reviewer_notes": "notes"
+    },
+    "prompt_versions": {
+      "prompt_id": "prompt_key",
+      "active": "status",
+      "changelog": "change_summary"
+    },
+    "reels": {
+      "reel_id": "published_id",
+      "production_notes": "notes"
+    },
+    "performance": {
+      "reel_id": "published_id",
+      "er": "engagement_rate"
+    }
+  },
+  "target_niches": [
+    "мужской-стиль",
+    "мужские-образы",
+    "маркетплейс-подборки",
+    "бренды-магазины",
+    "аксессуары"
+  ],
+  "apify": {
+    "token_file": "~/.cf/secrets/apify-token.txt",
+    "actors": {
+      "tiktok": "clockworks~tiktok-scraper",
+      "tiktok_hashtag": "apidojo~tiktok-scraper",
+      "instagram_discovery": "apify~instagram-search-scraper",
+      "instagram_hashtag": "apify~instagram-hashtag-scraper",
+      "instagram_reel": "apify~instagram-reel-scraper",
+      "instagram_transcripts": "apple_yang~instagram-transcripts-scraper"
+    },
+    "poll_interval": 5,
+    "poll_timeout": 900,
+    "http_timeout": 30,
+    "max_workers": 2
+  },
+  "metrika": {
+    "token_file": "~/.cf/secrets/metrika-token.txt",
+    "counter_id": "<METRIKA_COUNTER_ID>",
+    "http_timeout": 30
+  },
+  "payout": {
+    "per_transition_rub": 1,
+    "sales_percent": 1,
+    "hold_days": 1,
+    "monthly_fix_rub": {}
+  },
+  "site": {
+    "base_url": "https://jelapeche.com"
+  },
+  "sources": {
+    "exploration": {
+      "min_runs": 2,
+      "retire_below_rows": 3,
+      "promote_min_rows": 8,
+      "er_factor": 0.8,
+      "window_days": 14,
+      "batch": 4,
+      "harvest_top_n": 5,
+      "mature_share": 0.5,
+      "pool_cap": 40
+    }
+  },
+  "telegram": {
+    "token_file": "~/.cf/secrets/telegram-token.txt",
+    "chat_id_file": "~/.cf/secrets/telegram-chat-id.txt"
+  },
+  "hiring": {
+    "spreadsheet_id": "<SPREADSHEET_ID_HIRING>",
+    "application_form_id": "<FORM_ID_APPLICATION>",
+    "archived_test_form_id": "<FORM_ID_ARCHIVED_TEST>",
+    "archived_test_doc_id": "<DOC_ID_ARCHIVED_TEST>",
+    "ruleset": "hiring-v3-2026-07-31"
+  }
+}

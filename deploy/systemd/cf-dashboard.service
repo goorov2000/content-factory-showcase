@@ -1,0 +1,16 @@
+[Unit]
+Description=CF: веб-пульт (uvicorn на 127.0.0.1:8787, наружу торчит только Caddy)
+After=network-online.target
+OnFailure=cf-alert@%n.service
+
+[Service]
+User=<user>
+WorkingDirectory=/home/<user>/projects/CF
+# ~/.local/bin в PATH обязателен: фан-аут спавнит claude -p subprocess'ом
+Environment=PATH=/home/<user>/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/home/<user>/projects/CF/.venv/bin/python -m cf dashboard
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

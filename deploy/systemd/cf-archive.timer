@@ -1,0 +1,9 @@
+[Unit]
+Description=CF: архив/ретенция (старше 45д) (расписание)
+
+[Timer]
+OnCalendar=Sun *-*-* 07:10:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

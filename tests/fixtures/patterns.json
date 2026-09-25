@@ -1,0 +1,23 @@
+{
+  "meta": {
+    "niche": "pets",
+    "generated_at": "2026-07-09T00:00:00+00:00",
+    "source_profile": "agent-runtime/profiles/2026-07-09-raw_tiktok-profile.json"
+  },
+  "patterns": [
+    {
+      "pattern_id": "pets-hook-question-01",
+      "description": "Хук-вопрос в первые 2 секунды даёт выше ER",
+      "evidence": {
+        "source_urls": [
+          "https://tiktok.com/@a/video/1",
+          "https://tiktok.com/@b/video/2",
+          "https://tiktok.com/@c/video/3"
+        ],
+        "avg_views": 120000,
+        "avg_er": 0.081
+      },
+      "confidence": "medium"
+    }
+  ]
+}

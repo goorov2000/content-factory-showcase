@@ -1,0 +1,11 @@
+{
+  "brief_id": "b-001",
+  "source_pattern_ids": ["pets-hook-question-01"],
+  "formula_id": "pets-question-hook",
+  "prompt_version": "v1",
+  "hook": "А вы знали, что кошки различают ваш голос из тысячи?",
+  "script": "0-3с: хук-вопрос с крупным планом кошки. 3-15с: домашний эксперимент. 15-25с: реакция кошки и вывод. Финал: CTA подписаться.",
+  "visual_direction": "Съёмка на телефон, дневной свет, кошка в кадре с первой секунды",
+  "cta": "Подпишись, чтобы узнать больше о своём питомце",
+  "references": ["https://tiktok.com/@a/video/1", "https://tiktok.com/@b/video/2"]
+}

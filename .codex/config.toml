@@ -1,0 +1,13 @@
+# Проектный слой Codex. Грузится только когда проект отмечен trusted
+# (~/.codex/config.toml → [projects."<путь>"] trust_level = "trusted").
+# Что здесь можно и нельзя задавать — docs/codex.md.
+
+# cf CLI ходит в Google Sheets API (операционное хранилище завода): без сети
+# внутри workspace-write-песочницы не работают ни read, ни collect, ни dashboard.
+[sandbox_workspace_write]
+network_access = true
+
+# Лайфсайкл-хуки: PreToolUse-guard защищённых путей (hooks.json рядом).
+# Command-хук дополнительно требует разового доверия оператора: /hooks в Codex.
+[features]
+hooks = true

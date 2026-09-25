@@ -1,0 +1,6 @@
+# сгенерировано `cf codex-sync` — не править руками
+interface:
+  display_name: "Brief Prompt Writer"
+  short_description: "Brief Prompt Writer - написать brief-промпт ниши по её утверждённым формулам (proposal)"
+policy:
+  allow_implicit_invocation: false

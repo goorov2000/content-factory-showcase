@@ -1,0 +1,6 @@
+interface:
+  display_name: "CF Demo Eval Loop"
+  short_description: "Прогон eval-петли CF на фиктивных данных: симуляция, слепая сверка, полное стирание"
+policy:
+  # симуляция пишет и потом СТИРАЕТ данные — запуск только явный ($cf-demo-eval-loop)
+  allow_implicit_invocation: false

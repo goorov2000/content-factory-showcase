@@ -1,0 +1,14 @@
+# graphify: карта СВОЕГО содержимого CF, без чужих скиллов, тестов и артефактов
+.agents/
+.claude/
+.codex/
+.superpowers/
+.playwright-mcp/
+.venv/
+agent-runtime/
+secrets/
+tests/
+n8n/
+docs/superpowers/
+docs/n8n-archive/
+skills-lock.json

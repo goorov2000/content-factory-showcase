@@ -1,0 +1,6 @@
+# сгенерировано `cf codex-sync` — не править руками
+interface:
+  display_name: "Raw Batch Profiler"
+  short_description: "Raw Batch Profiler - проверить качество батча перед анализом"
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,15 @@
+[Unit]
+# Сторож: проверяет, что утренний цикл вообще состоялся. Ходит СВОИМ таймером,
+# отдельным процессом от дашборда — иначе смерть дашборда некому заметить.
+# Спека §5 обещала это событие («ежедневный таймер не отработал») с самого
+# начала, но кода у него не было до 2026-08-10.
+Description=CF: сторож — проверить, что завод отработал
+After=network-online.target
+OnFailure=cf-alert@%n.service
+
+[Service]
+Type=oneshot
+User=<user>
+WorkingDirectory=/home/<user>/projects/CF
+Environment=PATH=/home/<user>/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/home/<user>/projects/CF/.venv/bin/python -m cf heartbeat

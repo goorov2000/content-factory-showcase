@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <div class="eyebrow">СОБРАННЫЕ РОЛИКИ КОНКУРЕНТОВ</div>
+    <h1>РЕФЕРЕНСЫ</h1>
+    <p class="lead">Ролики конкурентов и лидеров тем, которые система собирает из TikTok
+      и Instagram. Смотрите, что набирает просмотры — и почему.</p>
+  </div>
+  <nav class="chips" aria-label="Вкладки раздела">
+    {% for key, label in [("tiktok","TikTok"),("instagram","Instagram")] %}
+    <a class="chip {{ 'active' if tab == key }}" href="/sources?tab={{ key }}"{{ ' aria-current="true"' | safe if tab == key }}>
+      {{ label }}{% if counts.get(key) is not none %} · {{ counts[key] }}{% endif %}</a>
+    {% endfor %}
+  </nav>
+</header>
+
+{% if error %}
+<div class="banner error">Не удалось загрузить референсы. Обновите страницу или попробуйте позже.
+  <details class="tech"><summary>Техническая причина</summary><span class="mono">{{ error }}</span></details></div>
+{% elif not rows %}<div class="empty-state">Пока нет собранных роликов.</div>
+{% else %}
+{# Фаза 3: главная задача продюсера здесь — найти, что взлетело. Сортировка живёт
+   в URL (?sort=), поэтому ссылку на «сначала популярные» можно переслать. #}
+<nav class="chips sort-row">
+  <span class="sort-label">Сначала:</span>
+  {% for key, label in [("date","новые"),("views","популярные"),("saves","сохраняемые")] %}
+  <a class="chip {{ 'active' if sort == key }}" href="/sources?tab={{ tab }}&sort={{ key }}">{{ label }}</a>
+  {% endfor %}
+</nav>
+<div class="card card--table">
+  <table class="queue">
+    <caption class="sr-only">Собранные ролики конкурентов</caption>
+    <thead><tr><th scope="col">Аккаунт</th>{% if has_hooks %}<th scope="col">Заход</th>{% endif %}<th scope="col">Тема</th>
+      <th class="num" scope="col">Просмотры</th><th class="num" scope="col">Лайки</th><th class="num" scope="col">Комментарии</th><th class="num" scope="col">Сохранения</th>
+      <th scope="col">Дата</th><th scope="col">Ролик</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td class="mono">{{ r.account }}</td>
+        {% if has_hooks %}<td>{{ (r.hook_text or "—") | string | truncate(80, True, "…") }}</td>{% endif %}
+        <td><span class="tag">{{ r.niche | niche_label }}</span></td>
+        <td class="mono num">{{ r.views | fmt_views }}</td>
+        <td class="mono num">{{ r.likes | fmt_views }}</td>
+        <td class="mono num">{{ r.comments | fmt_views }}</td>
+        <td class="mono num">{{ r.saves | fmt_views }}</td>
+        <td class="mono">{{ r.posted_at | fmt_date }}</td>
+        <td>{% if (r.source_url or "").startswith("http") %}<a href="{{ r.source_url }}" target="_blank" rel="noopener"
+               aria-label="Открыть ролик {{ r.account }} на площадке"
+               title="Открыть ролик на площадке">↗</a>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if total > rows | length %}<div class="table-foot">Показаны {{ rows | length }} из {{ total }}.</div>{% endif %}
+{% endif %}
+{% endblock %}

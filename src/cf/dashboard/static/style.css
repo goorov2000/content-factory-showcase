@@ -1,0 +1,746 @@
+/* src/cf/dashboard/static/style.css — токены CF DS/DESIGN.md */
+/* Гарнитура Aeroport (display/mono ДС бренда, коммерческая лицензия) в витринной копии не
+   поставляется: стеки --font-display и --font-mono откатываются на Montserrat и системный
+   моноширинный. Лицензии шрифтов — static/fonts/THIRD-PARTY.md. */
+/* Montserrat (SIL OFL) — UI-роль ДС. До Фазы 5 шрифт был ОБЪЯВЛЕН в --font-ui, но не
+   подключён: браузер рисовал системным, а вес 600 синтезировал. Хостим сами (офлайн,
+   без CDN): вариативный woff2, два сабсета — кириллица и латиница. */
+@font-face { font-family: Montserrat; src: url("/static/fonts/Montserrat-cyrillic.woff2") format("woff2");
+  font-weight: 400 600; font-style: normal; font-display: swap;
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face { font-family: Montserrat; src: url("/static/fonts/Montserrat-latin.woff2") format("woff2");
+  font-weight: 400 600; font-style: normal; font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+:root {
+  --primary: #131417; --ink: #1D232E; --accent-blue: #759AC4; --accent-blue-deep: #6489B3; --accent-blue-text: #476C96;
+  --gray: #99999B; --gray-text: #5A6068; --silver: #C9CED1;
+  --frost: #EEF0F2; --press: #E4E7EA; --hairline-dark: #39414E;
+  --success: #6FA287; --success-text: #47695A; --success-soft: #EAF2EE;
+  --warning: #C9A15E; --warning-text: #75592B; --warning-soft: #F7F1E5;
+  --error: #BF6B6B; --error-text: #A14E4E; --error-soft: #F7EAEA;
+  --info-soft: #EAF1F8;
+  --shadow-1: 0 1px 4px rgba(29,35,46,.07);
+  --shadow-2: 0 10px 24px -6px rgba(29,35,46,.14);
+  --focus-ring: 0 0 0 2px #fff, 0 0 0 4px var(--accent-blue-text);
+  --focus-ring-dark: 0 0 0 2px var(--primary), 0 0 0 4px var(--accent-blue);
+  --font-display: Montserrat, system-ui, sans-serif;
+  --font-ui: Montserrat, -apple-system, system-ui, sans-serif;
+  --font-mono: ui-monospace, "JetBrains Mono", Consolas, monospace;
+  --ease: cubic-bezier(.2, 0, 0, 1);
+}
+
+* { box-sizing: border-box; margin: 0; }
+body { font-family: var(--font-ui); font-size: 15px; line-height: 1.5; color: var(--ink); background: #fff; }
+a { color: var(--accent-blue-text); }
+button { font: inherit; cursor: pointer; }
+/* outline прозрачный, но обязателен: в forced-colors (Windows High Contrast)
+   тени вырезаются, и системный цвет подставляется именно в outline. */
+:focus-visible { outline: 2px solid transparent; outline-offset: 2px; box-shadow: var(--focus-ring); }
+.sidebar :focus-visible { box-shadow: var(--focus-ring-dark); }
+.mono { font-family: var(--font-mono); }
+
+.shell { display: flex; min-height: 100vh; }
+.main { flex: 1; min-width: 0; padding: 28px 32px; display: flex; flex-direction: column;
+  gap: 24px; background: var(--frost); }
+
+/* Сайдбар */
+.sidebar { width: 240px; flex-shrink: 0; background: var(--primary); color: #fff;
+  display: flex; flex-direction: column; padding: 24px 0; position: sticky; top: 0;
+  height: 100dvh; overflow-y: auto; }
+.brand { display: flex; gap: 12px; align-items: center; padding: 0 20px 28px; }
+.brand-mark { width: 41px; height: 41px; flex-shrink: 0; }
+.brand-name { font: 500 19px/1.2 var(--font-display); letter-spacing: .12em; white-space: nowrap; }
+.brand-sub { font: 500 10px/1.4 var(--font-ui); letter-spacing: .18em; color: var(--gray); white-space: nowrap; }
+.nav { display: flex; flex-direction: column; gap: 2px; padding: 0 12px; }
+.nav-item { padding: 10px 12px; border-radius: 6px; color: var(--silver); font: 500 13px var(--font-ui);
+  text-decoration: none; transition: background .12s var(--ease), color .12s var(--ease); }
+.nav-item:hover { background: rgba(57,65,78,.6); color: #fff; }
+.nav-item.active { color: #fff; font-weight: 600; border-radius: 0;
+  box-shadow: inset 2px 0 0 var(--accent-blue); }
+/* .active перебивал :focus-visible по специфичности — на текущем разделе кольцо
+   фокуса пропадало совсем. Возвращаем его вместе с маркером активности. */
+.nav-item.active:focus-visible { box-shadow: inset 2px 0 0 var(--accent-blue), var(--focus-ring-dark); }
+.nav-badge { float: right; min-width: 18px; padding: 1px 6px; border-radius: 9px; text-align: center;
+  background: var(--accent-blue); color: var(--primary); font: 600 11px var(--font-ui); }
+.sidebar-foot { margin-top: auto; padding: 16px 20px 0; border-top: 1px solid var(--hairline-dark);
+  display: flex; flex-direction: column; gap: 12px; }
+.btn-outline-dark { width: 100%; padding: 12px 6px; background: none; border: 1px solid var(--hairline-dark);
+  border-radius: 4px; color: var(--silver); font: 600 12px var(--font-ui); letter-spacing: 1.5px; text-transform: uppercase; white-space: nowrap; }
+.btn-outline-dark:hover { background: var(--hairline-dark); color: #fff; }
+
+/* Раздел «Уведомления» внизу сайдбара (2026-07-28, С2). Панель всплывает рядом
+   с кнопкой поверх страницы и ШИРЕ сайдбара (240px): строки вроде «3 темы без
+   включённых правил сценариев» в ширину сайдбара не помещаются. */
+.notif { position: relative; }
+.notif-btn { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.notif-count { min-width: 18px; padding: 1px 6px; border-radius: 9px;
+  background: var(--accent-blue); color: var(--primary);
+  font: 600 11px var(--font-ui); letter-spacing: 0; }
+/* position: fixed, а не absolute: у сайдбара overflow-y: auto, и абсолютная
+   панель обрезалась бы его границей ровно по ширине 240px — то есть по тому
+   самому краю, за который ей и нужно выйти. Координаты ставит JS по месту
+   кнопки (см. notifications.js): «рядом с кнопкой» должно оставаться правдой и
+   с индикатором систем, и без него. */
+.notif-pop { position: fixed; width: 320px; max-width: calc(100vw - 24px);
+  background: #fff; border: 1px solid var(--silver); border-radius: 8px;
+  box-shadow: var(--shadow-2); color: var(--ink); text-align: left; z-index: 400; }
+.notif-pop[hidden] { display: none; }
+.notif-pop:focus-visible { box-shadow: var(--shadow-2), var(--focus-ring); }
+.notif-head { padding: 12px 16px 10px; font: 600 11px var(--font-ui);
+  letter-spacing: .16em; color: var(--gray-text); }
+.notif-row { padding: 10px 16px; border-top: 1px solid var(--frost); font-size: 12.5px; }
+.notif-row a { color: var(--ink); text-decoration: none; }
+.notif-row a:hover { color: var(--accent-blue-text); }
+.notif-empty { color: var(--gray-text); }
+
+/* ── Тосты (2026-07-28, С1) ──────────────────────────────────────────────────
+   Полос на странице не остаётся: контейнер position: fixed, поэтому появление
+   сообщения не двигает ни одного элемента вёрстки — ровно то, из-за чего
+   владелец от полос и отказался. Справа снизу, стопкой снизу вверх. */
+.toasts { position: fixed; right: 16px; bottom: 16px; z-index: 500;
+  display: flex; flex-direction: column-reverse; gap: 10px;
+  width: min(380px, calc(100vw - 32px)); pointer-events: none; }
+.toast { position: relative; overflow: hidden; pointer-events: auto;
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 14px 14px; border-radius: 8px; border: 1px solid var(--silver);
+  background: #fff; box-shadow: var(--shadow-2); font-size: 12.5px;
+  /* аккуратно и не кричаще: тон задаёт узкая полоса слева, а не заливка */
+  border-left: 3px solid var(--warning);
+  transition: transform .32s var(--ease), opacity .32s var(--ease); }
+.toast--error { border-left-color: var(--error); }
+.toast--error .toast-bar { background: var(--error); }
+.toast-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.toast-text { overflow-wrap: anywhere; }
+.toast-action { font-weight: 600; text-decoration: none; }
+.toast-close { flex-shrink: 0; width: 24px; height: 24px; border: none;
+  border-radius: 4px; background: none; color: var(--gray-text);
+  font-size: 16px; line-height: 1; }
+.toast-close:hover { background: var(--frost); color: var(--ink); }
+/* Полоса исчезания И ЕСТЬ таймер: её animationend закрывает тост, поэтому
+   наведение, ставящее анимацию на паузу, приостанавливает и срок жизни. */
+.toast-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+  background: var(--warning); transform-origin: left center;
+  animation: toast-life 6s linear forwards; }
+.toast:hover .toast-bar, .toast:focus-within .toast-bar { animation-play-state: paused; }
+@keyframes toast-life { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+/* При «уменьшить движение» гасим ПОЛЁТ, но не полосу: она не украшение, а
+   таймер — без неё тост не закрылся бы никогда. */
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+
+/* Шапка страницы */
+.page-head { display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 16px 24px; flex-wrap: wrap; }
+.eyebrow { font: 500 11px var(--font-ui); letter-spacing: .3em; color: var(--gray-text); margin-bottom: 6px; }
+h1 { font: 500 32px/1.2 var(--font-display); letter-spacing: .016em; text-transform: uppercase; }
+.blue-word { color: var(--accent-blue-deep); }
+
+/* Карточки и плитки */
+.card { background: #fff; border: 1px solid var(--silver); border-radius: 8px;
+  box-shadow: var(--shadow-1); padding: 20px 24px; }
+.card-head { display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 8px 16px; margin-bottom: 14px; }
+.card-title { font: 600 15px var(--font-ui); }
+.card-sub { font: 400 11px var(--font-ui); color: var(--gray-text); }
+/* Шесть долей в два ряда (решение владельца 2026-07-28): «Звенья завода» —
+   доли 1-2, «Ждут назначения» — 3, «Темп недели» — 4-5, «Опубликованы» — 6.
+   Прежний auto-fit раскладывал плитки «по месту» и на ноутбуке 1280 давал три
+   в первом ряду и одну сиротой во втором — тот самый дисбаланс, из-за которого
+   сетку и переделали. Широкими сделаны ровно те две плитки, у которых внутри
+   не одно число: четыре мини-плитки звеньев и три полукольца с легендой. */
+.stat-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px; }
+.stat--wide { grid-column: span 2; }
+.stat { background: #fff; border: 1px solid var(--silver); border-radius: 8px;
+  box-shadow: var(--shadow-1); padding: 18px 20px; display: flex; flex-direction: column; gap: 8px; }
+.stat-label { font: 600 10px var(--font-ui); letter-spacing: .2em; color: var(--gray-text);
+  min-height: 26px; }
+.stat-value { font: 400 28px var(--font-mono); }
+.stat-sub { font: 400 11px var(--font-ui); color: var(--gray-text); }
+/* Блок из четырёх мини-плиток в габарите одной (2026-07-28, элемент 6): звенья
+   завода читаются одним взглядом, а строка плиток не растёт вчетверо. Плитка
+   стала вдвое шире — звенья выстраиваются в один ряд, цепочкой, там где для
+   этого есть место, и складываются в 2×2 там, где нет. */
+.mini-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
+  gap: 10px;
+  /* Плитка тянется по высоте соседней, и звенья липли к её верху, оставляя под
+     собой пустую половину. flex + align-content держат их по центру свободного
+     места — на любой высоте ряда. */
+  flex: 1; align-content: center; }
+/* Число над своей подписью, обе по центру доли: при равных долях и разной длине
+   («1938» против «2») левый край рвал строку на неровные куски. */
+.mini-tile { text-align: center; }
+/* Число — резиновое: в плитке двойной ширины фиксированные 22px выглядели
+   мелочью, а фиксированные 34px не влезли бы четырьмя четырёхзначными числами
+   в 291px содержимого на ноутбуке 1280 (моно-цифра ≈ 0.6em). clamp держит
+   середину: ~26px на 1280, до 34px на широком экране. */
+.mini-value { font: 400 clamp(22px, 2vw, 34px) var(--font-mono); line-height: 1.15; }
+/* Подпись тоже резиновая, и по той же причине: на 1280 доля звена ~66px, и
+   «raw ролики» крупнее 10.5px ломается на две строки, перекашивая ряд. */
+.mini-label { font: 400 clamp(10px, 0.8vw, 12.5px) var(--font-ui); color: var(--gray-text); }
+
+/* «Темп недели»: три вложенных полукольца в габарите обычной плитки. Цвет —
+   не единственный носитель смысла: рядом легенда с подписью и числом текстом,
+   а сам рисунок aria-hidden, чтобы скринридер читал числа, а не пути SVG. */
+/* Плитка вдвое шире обычной, поэтому кольца крупнее (150×80 при viewBox 120×64
+   — та же пропорция, дуги не сплющиваются) и стоят по центру свободной высоты. */
+.rings { display: flex; align-items: center; justify-content: center; gap: 18px;
+  flex-wrap: wrap; flex: 1; }
+.rings-art { width: 150px; height: 80px; flex-shrink: 0; }
+.ring-track { fill: none; stroke: var(--press); stroke-linecap: round; }
+.ring-fill { fill: none; stroke-linecap: round; transition: stroke-dasharray .3s var(--ease); }
+/* Радуга по конвейеру: синий — одобрено, янтарный — назначен, зелёный — вышел */
+.ring-approved { stroke: var(--accent-blue-deep); }
+.ring-assigned { stroke: var(--warning); }
+.ring-published { stroke: var(--success); }
+/* Легенда забирает всю ширину справа от рисунка: плитка стала вдвое шире, и без
+   этого числа висели у левого края, а половина плитки пустовала. */
+.rings-legend { list-style: none; margin: 0; padding: 0; display: flex;
+  flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 160px; }
+.rings-legend li { display: flex; align-items: baseline; gap: 6px;
+  font: 400 10.5px var(--font-ui); color: var(--gray-text); }
+.ring-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  align-self: center; }
+.ring-dot.ring-approved { background: var(--accent-blue-deep); }
+.ring-dot.ring-assigned { background: var(--warning); }
+.ring-dot.ring-published { background: var(--success); }
+.ring-value { margin-left: auto; color: var(--ink); font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .ring-fill { transition: none; } }
+/* ── Кусочки сценариев под плитками (2026-07-28) ─────────────────────────────
+   Карточка целиком — ссылка на «Сценарии»: кликабельным должен быть весь
+   кусочек, а не заголовок в нём. Текст обрезан и на сервере (170 символов), и
+   тут по строкам: без второго обрезка разной длины заголовки развалили бы
+   сетку по высоте. */
+.peek-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 12px; }
+.peek { display: flex; flex-direction: column; gap: 7px; padding: 12px 14px;
+  border: 1px solid var(--silver); border-radius: 8px; background: var(--frost);
+  color: var(--ink); text-decoration: none;
+  transition: background .12s var(--ease), border-color .12s var(--ease); }
+.peek:hover { background: #fff; border-color: var(--accent-blue); }
+/* Ждущее решения выделено полосой слева — тем же приёмом, что строки ленты
+   «ждёт вас»: это единственное на экране, что действительно за человеком. */
+.peek--waiting { border-left: 3px solid var(--accent-blue); }
+.peek-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.peek-hook { font: 600 13px/1.35 var(--font-ui);
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.peek-script { font: 400 11.5px/1.5 var(--font-ui); color: var(--gray-text);
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.peek-foot { margin-top: auto; font-size: 10.5px; color: var(--gray-text); }
+@media (prefers-reduced-motion: reduce) { .peek { transition: none; } }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* ── Две колонки «Обзора» (решение владельца 2026-07-28, С5) ─────────────────
+   Слева плитки и карточка «Конвейер», справа — узкая колонка с лентой. Лента В
+   ПОТОКЕ: ни position:sticky, ни своего overflow — оба обсуждались и оба
+   отклонены владельцем.
+
+   Ширина решена замером на живом превью, а не на глаз: самая широкая строка
+   ленты — 344px текста плюс 22px значок и 72px колонка «▶ →»; после починки
+   акторов (CLAUDE CODE — 67px против 12px у «вы») и с самым длинным счётчиком
+   строке нужно ~600px, а с названиями вида «Включение правил сценариев темы» —
+   669px. На ноутбуке 1280 всего содержимого без сайдбара 1040px, поэтому
+   колонка не фиксированная, а долевая: где место есть — строка идёт одним
+   рядом, где нет — актор и счётчик уезжают вторым ярусом (.tl-meta ниже). */
+.overview-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .9fr);
+  gap: 16px; align-items: start; }
+.ov-main { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+.ov-side { min-width: 0; }
+
+/* Конвейер: плитки-этапы заменены вертикальной лентой (.timeline), от старой
+   разметки в шаблонах остались только эти три класса. */
+.cycle-note { margin-top: 10px; font: 400 11.5px var(--font-ui); color: var(--accent-blue-text); }
+.cycle-note.error { color: var(--error-text); }
+.stage-run { position: relative; z-index: 1; display: inline-flex; align-items: center;
+  justify-content: center; width: 32px; height: 32px; border-radius: 50%;
+  border: 1px solid var(--silver); background: var(--frost); font-size: 11px; color: var(--ink); }
+.stage-run:hover { background: var(--press); }
+/* «▶ Полный цикл» в шапке «Конвейера» (решение владельца 2026-07-28): чёрная
+   заливка на 44px перекрикивала заголовок карточки, хотя это не главное действие
+   экрана — цикл и так идёт сам в 07:30, а кнопка лишь дубль таймера. Тише по
+   весу и цвету, но не спрятана: та же пара frost+silver, что у ▶ на шагах ленты,
+   так что запуск читается как один класс действий. Переопределены и :hover с
+   :active — базовые красят фон в --ink, а текст здесь тёмный и пропал бы.
+   Scope узкий намеренно: .btn-primary — это ещё «✓ Одобрить» в ревью сценариев
+   и кнопки ворот в лаборатории, им громкость нужна. */
+.ov-side .card-head .btn-primary { background: var(--frost); color: var(--ink);
+  border: 1px solid var(--silver); padding: 7px 12px;
+  font: 600 10.5px var(--font-ui); letter-spacing: .08em; }
+.ov-side .card-head .btn-primary:hover { background: var(--press); }
+.ov-side .card-head .btn-primary:active { background: var(--silver); }
+
+/* Вертикальная лента конвейера (Фаза 2б): шаг = строка, цепочка агентов видна,
+   полоска прогресса, разделитель перед ручными этапами. Стекается на мобильном. */
+/* padding-left: 0 обязателен явно (правка 2026-07-28): лента — это <ol>, а
+   глобальный сброс выше обнуляет margin, но не padding, и браузерные 40px
+   отступа под номера списка стояли пустой полосой слева от значков статуса.
+   Убраны — те же 40px забрала строка, полоска прогресса стала шире на столько же. */
+.timeline { list-style: none; padding-left: 0; display: flex; flex-direction: column; margin-top: 6px; }
+.tl-step { position: relative; display: grid; grid-template-columns: 22px 1fr auto;
+  gap: 12px; align-items: start; padding: 11px 2px; }
+.tl-step + .tl-step, .tl-divider + .tl-step { border-top: 1px solid var(--frost); }
+/* соединительная линия по колонке иконок — «цепочка» шагов */
+.tl-step::before { content: ""; position: absolute; left: 10px; top: 22px; bottom: -11px;
+  width: 2px; background: var(--press); }
+.tl-step:last-child::before { display: none; }
+.tl-icon { position: relative; z-index: 1; width: 22px; height: 22px; display: flex;
+  align-items: center; justify-content: center; border-radius: 50%; background: #fff;
+  border: 1px solid var(--silver); font-size: 10px; line-height: 1; color: var(--gray-text);
+  cursor: help; }
+.tl-done .tl-icon { border-color: var(--success); color: var(--success-text); background: var(--success-soft); }
+.tl-running .tl-icon { border-color: var(--accent-blue); color: var(--accent-blue-text); background: var(--info-soft); }
+.tl-warn .tl-icon, .tl-error .tl-icon { border-color: var(--error); color: var(--error-text); background: var(--error-soft); }
+.tl-body { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+/* Резиновая строка: пока название и группа «актор + счётчик» помещаются рядом —
+   они стоят по краям одного ряда, как раньше. Как только перестают — группа
+   переносится ПОД название целиком, вторым ярусом, и ничего не теряется ни на
+   одной ширине. space-between вместо прежнего margin-left:auto нужен именно
+   ради второго яруса: одинокий элемент на перенесённой строке при auto прижался
+   бы к правому краю и повис в воздухе. flex-basis у названия задан явно — без
+   него перенос решался бы по самому длинному слову, и название крошилось бы в
+   столбик вместо того, чтобы отдать ряд группе. */
+.tl-line { display: flex; align-items: baseline; gap: 4px 10px; flex-wrap: wrap;
+  justify-content: space-between; }
+.tl-name { font: 600 13px var(--font-ui); flex: 1 1 14ch; min-width: 0; }
+.tl-meta { display: flex; align-items: baseline; gap: 10px; flex: 0 1 auto;
+  min-width: 0; flex-wrap: wrap; }
+.tl-actor { font: 400 8.5px var(--font-mono); letter-spacing: .1em; color: var(--gray-text); text-transform: uppercase; }
+.tl-count { font: 400 11px var(--font-ui); color: var(--gray-text); white-space: nowrap; }
+.tl-bar { height: 6px; border-radius: 4px; background: var(--press); overflow: hidden; max-width: 100%; }
+/* Прогресс v2: тикер обновляет ширину каждые 200 мс, поэтому переход короткий —
+   иначе движение «плывёт» за реальным значением. Доезд до 100% (.tl-done) — мягче. */
+.tl-fill { height: 100%; border-radius: 4px; background: var(--accent-blue);
+  transition: width .25s linear; }
+.tl-done .tl-fill { background: var(--success); transition: width .6s cubic-bezier(.2, 0, 0, 1); }
+.tl-warn .tl-fill, .tl-error .tl-fill { background: var(--warning); }
+/* Не бегущий шаг не должен выглядеть работающим: синий — только для running.
+   Прерванный прогон — приглушённая полоска плюс подпись «прогон прерван». */
+.tl-idle .tl-fill, .tl-interrupted .tl-fill { background: var(--silver); }
+.tl-interrupted .tl-icon { border-color: var(--warning); color: var(--warning-text);
+  background: var(--warning-soft); }
+/* «ждёт вас» ≠ «ждёт очереди»: ход за продюсером — единственное, ради чего он
+   смотрит на ленту, поэтому такие строки выделены акцентом. */
+.tl-backlog .tl-icon { border-color: var(--accent-blue); color: var(--accent-blue-text);
+  background: var(--info-soft); }
+.tl-backlog .tl-count { color: var(--accent-blue-text); font-weight: 600; }
+.tl-note { color: var(--warning-text); }
+.tl-fill.running { animation: tl-pulse 1.4s ease-in-out infinite; }
+@keyframes tl-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+/* Подпись «что сейчас происходит» + время + процент под полоской */
+.tl-phase { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+  font: 400 11px var(--font-ui); color: var(--gray-text); }
+.tl-phase-name { color: var(--accent-blue-text); }
+.tl-elapsed, .tl-pct, .tl-took { font-size: 10.5px; font-variant-numeric: tabular-nums; }
+.tl-pct { margin-left: auto; }
+/* «шёл 18:03» у завершённого шага: цвет наследует .tl-phase (--gray-text) —
+   новый серый токен не заводим, светлее по ДС уже не проходит по контрасту */
+
+/* min-width держит колонку одинаковой у строк с кнопкой ▶ и без неё: иначе
+   правые края полосок разъезжались на 28px и лента читалась как две таблицы */
+.tl-actions { display: flex; align-items: center; justify-content: flex-end;
+  gap: 8px; min-width: 72px; padding-top: 1px; }
+/* цель нажатия 32×32 (было 12×14): промах по соседней ▶ запускал прогон */
+.tl-open { display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; color: var(--gray-text); font-size: 14px;
+  text-decoration: none; line-height: 1; border-radius: 6px; }
+.tl-open:hover { color: var(--accent-blue-text); }
+.tl-divider { list-style: none; margin: 8px 0 2px; padding-left: 34px; }
+.tl-divider span { font: 500 10px var(--font-ui); letter-spacing: .08em;
+  color: var(--gray-text); text-transform: uppercase; }
+
+/* ── Ворота (2026-07-26) ─────────────────────────────────────────────────────
+   Строка, на которой конвейер не идёт дальше без решения оператора. Красное
+   даётся ТОЛЬКО держащим воротам: если красным горят все ворота сразу, красное
+   становится фоном и новая важная строка теряется. Открытые ворота и ворота
+   сценариев (они машину не держат) остаются спокойными. */
+.tl-kind-gate { background: var(--porcelain, #FAFBFC); }
+.tl-kind-gate .tl-name { letter-spacing: .01em; }
+.tl-blocked .tl-icon { border-color: var(--error); color: var(--error-text);
+  background: var(--error-soft); }
+.tl-blocked .tl-name { color: var(--error-text); }
+.tl-blocked .tl-count { color: var(--error-text); font-weight: 600; }
+.tl-passed .tl-icon { border-color: var(--success); color: var(--success-text);
+  background: var(--success-soft); }
+/* Перечень тем прямо в строке: «2 темы ждут вас» без имён отправляет искать,
+   а точка действия должна быть одна. */
+.tl-gate-rows { list-style: none; display: flex; flex-direction: column; gap: 4px;
+  margin: 2px 0 0; padding: 0; }
+.tl-gate-rows li { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+  font: 400 11.5px var(--font-ui); }
+.tl-gate-niche { font-weight: 600; }
+.tl-gate-state { color: var(--gray-text); }
+.tl-gate-meta { font-size: 10px; color: var(--gray-text);
+  font-variant-numeric: tabular-nums; }
+.tl-gate-info { font: 400 11px var(--font-ui); color: var(--gray-text); }
+
+/* Красная полоса ворот и полоса «данные могли устареть» стали тостами
+   (2026-07-28, С1): .banner.gate-banner и .banner-action больше не нужны —
+   сообщение приходит всплывающим уведомлением и вёрстку не двигает. */
+@media (prefers-reduced-motion: reduce) {
+  .tl-fill.running { animation: none; }
+  .tl-fill { transition: none; }
+}
+
+/* Карточка темпа (X/70, воронка, старение) и график вовлечённости сняты с
+   «Обзора» 2026-07-28 — вместе с ними ушли .tempo/.progress/.funnel/.aging/
+   .chart* и селектор периода (.period). Счёт недели переехал в кольца «Темпа
+   недели», старение — подписью в плитку, графики результатов — на /performance. */
+
+/* Списки, строки, бейджи */
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 11px 0;
+  border-top: 1px solid var(--frost); font-size: 13px; }
+.row > .mono { min-width: 0; overflow-wrap: anywhere; }
+.row-meta { margin-left: auto; color: var(--gray-text); font-size: 12px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; }
+.dot.ok { background: var(--success); } .dot.warn { background: var(--warning); } .dot.fail { background: var(--error); }
+.banner.warn { background: var(--warning-soft); color: var(--warning-text); border-radius: 6px; padding: 10px 16px; font-size: 13px; }
+/* Фаза 5: три разных смысла — три класса. Раньше всё было .empty-state, и водяной
+   знак-логотип всплывал под ошибками и под подписью пагинации, читаясь как сбой. */
+.empty-state { color: var(--gray-text); padding: 24px; text-align: center; font-size: 13px; }
+/* водяной знак — только настоящая пустота (данных нет), не ошибка и не счётчик */
+.empty-state::before { content: ""; display: block; width: 96px; height: 96px; margin: 0 auto 12px;
+  background: url("/static/logo-symbol.svg") center/contain no-repeat; opacity: .08; }
+.banner.error { background: var(--error-soft); color: var(--error-text); border-radius: 6px;
+  padding: 12px 16px; font-size: 13px; }
+.banner.error a { color: var(--error-text); }
+.table-foot { padding: 12px 4px; text-align: center; font-size: 12px; color: var(--gray-text); }
+
+/* Кнопки */
+.btn-primary { background: var(--primary); color: #fff; border: none; border-radius: 4px;
+  padding: 12px 20px; font: 600 13px var(--font-ui); letter-spacing: 1.5px; text-transform: uppercase;
+  transition: background .12s var(--ease); }
+.btn-primary:hover { background: var(--ink); }
+.btn-primary:active { background: #0C0D0F; }
+.btn-danger-outline { background: none; border: 1px solid var(--error); color: var(--error-text);
+  border-radius: 4px; padding: 12px 20px; font: 600 13px var(--font-ui); letter-spacing: 1.5px; text-transform: uppercase; }
+.btn-danger-outline:hover { background: var(--error-soft); }
+
+/* Брифы */
+.chips { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.chip { padding: 7px 14px; border-radius: 16px; border: 1px solid var(--silver); background: #fff;
+  font: 600 12px var(--font-ui); color: var(--gray-text); text-decoration: none;
+  white-space: nowrap; transition: border-color .12s var(--ease), color .12s var(--ease); }
+.chip:hover { border-color: var(--accent-blue); color: var(--ink); }
+.chip.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.briefs-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 430px);
+  gap: 20px; align-items: start; }
+table.queue { width: 100%; border-collapse: collapse; font-size: 13px; }
+.queue th { text-align: left; font: 600 10px var(--font-ui); letter-spacing: .16em; color: var(--gray-text);
+  background: var(--frost); padding: 12px 14px; }
+.queue td { padding: 13px 14px; border-bottom: 1px solid var(--frost); }
+/* Заголовок сортируемой колонки — ссылка: порядок живёт в адресе, поэтому
+   переживает перезагрузку и делится ссылкой. Стрелка показывает текущее
+   направление, а не желаемое: «↓» = сначала новые. */
+.queue th .th-sort { display: inline-flex; align-items: center; gap: 4px;
+  color: inherit; text-decoration: none; letter-spacing: inherit; }
+.queue th .th-sort:hover { color: var(--accent-blue-text); }
+.queue tbody tr:nth-child(even) { background: var(--frost); }
+.queue tbody tr:hover { background: var(--info-soft); }
+.queue tbody tr.selected { background: var(--info-soft); box-shadow: inset 3px 0 0 var(--accent-blue-deep); }
+.queue a { color: inherit; text-decoration: none; display: block; }
+.tag { display: inline-block; white-space: nowrap; border: 1px solid var(--silver); border-radius: 3px; padding: 3px 8px;
+  font: 600 9px var(--font-ui); letter-spacing: .14em; text-transform: uppercase; color: var(--gray-text); }
+.badge { display: inline-block; white-space: nowrap; border-radius: 9999px; padding: 3px 10px;
+  font: 600 10px var(--font-ui); letter-spacing: .2em; text-transform: uppercase; }
+.badge.pending { background: var(--warning-soft); color: var(--warning-text); }
+.badge.approved { background: var(--success-soft); color: var(--success-text); }
+.badge.rejected { background: var(--error-soft); color: var(--error-text); }
+.badge.revised { background: var(--info-soft); color: var(--accent-blue-text); }
+.badge.published { background: var(--accent-blue-deep); color: #fff; }
+.script-box { background: var(--frost); border-radius: 6px; padding: 14px 16px; font-size: 12.5px; line-height: 1.55;
+  white-space: pre-wrap; overflow-wrap: break-word; }
+.field-label { display: block; font: 600 10px var(--font-ui); letter-spacing: .16em;
+  color: var(--gray-text); margin-bottom: 6px; }
+textarea.note { width: 100%; min-height: 72px; border: 1px solid var(--silver); border-radius: 6px;
+  padding: 10px 12px; font: 400 12.5px var(--font-ui); resize: vertical; }
+textarea.note:focus { outline: none; box-shadow: var(--focus-ring); border-color: var(--accent-blue); }
+.actions { display: flex; gap: 10px; margin-top: 16px; }
+.actions .btn-primary { flex: 1; }
+
+/* Отчёты звеньев */
+.report { border-top: 1px solid var(--frost); padding: 10px 0; }
+.report-head { font-size: 10.5px; color: var(--gray-text); margin-bottom: 6px; }
+.report-text { font: 400 12px/1.55 var(--font-ui); white-space: pre-wrap; word-break: break-word;
+  background: var(--frost); border-radius: 6px; padding: 12px 14px; max-height: 320px; overflow-y: auto; }
+.reply-form { margin-top: 12px; }
+
+/* Индикатор систем */
+.sys-btn { position: relative; display: flex; gap: 8px; align-items: center; width: 100%;
+  padding: 8px 10px; border: none; border-radius: 6px; background: var(--hairline-dark);
+  color: #fff; font: 600 10.5px var(--font-ui); letter-spacing: .12em; }
+/* Всплывашка состояния систем — по тем же правилам, что и «Уведомления»
+   (2026-07-28): position: fixed, а не absolute. У сайдбара overflow-y: auto,
+   поэтому абсолютная панель обрезалась ровно по его границе (240px) — со
+   стороны это читалось как «страница перекрывает всплывашку». Координаты
+   ставит systems.js по месту кнопки. Ширина 340px: в 264px не помещалась
+   расшифровка дрейфа схемы, а деталь — это весь смысл строки. */
+.sys-pop { display: none; position: fixed; bottom: 0; left: 0; width: 340px;
+  max-width: calc(100vw - 24px);
+  background: #fff; border: 1px solid var(--silver); border-radius: 8px; box-shadow: var(--shadow-2);
+  color: var(--ink); text-align: left; z-index: 400; }
+.sys-btn:hover .sys-pop, .sys-btn:focus-within .sys-pop { display: block; }
+.sys-pop-head { display: flex; justify-content: space-between; padding: 12px 16px 10px;
+  font: 600 11px var(--font-ui); letter-spacing: .16em; color: var(--gray-text); }
+/* Название системы и её деталь — двумя ярусами: деталь бывает длинной
+   («нет creator_slot, assigned_at — часть данных не сохраняется…») и в одной
+   строке с именем обрезалась. Второй ярус переносится целиком. */
+.sys-row { display: grid; grid-template-columns: 8px 1fr; gap: 4px 10px;
+  align-items: center; padding: 10px 16px; border-top: 1px solid var(--frost);
+  font-size: 12.5px; }
+/* margin-left: auto из общего .row-meta здесь снимаем: во втором ярусе он
+   прижимал короткую деталь («CLI найден») к правому краю, и строка читалась
+   как чужая. */
+.sys-row .row-meta { grid-column: 2; margin-left: 0; font-size: 10.5px;
+  line-height: 1.45; overflow-wrap: anywhere; white-space: normal; }
+
+/* Разделы этапа 2 */
+.queue th.num, .queue td.num { text-align: right; }
+.badge.success { background: var(--success-soft); color: var(--success-text); }
+.badge.failed { background: var(--error-soft); color: var(--error-text); }
+.badge.insufficient { background: var(--warning-soft); color: var(--warning-text); }
+.run-error { font-size: 11px; color: var(--error-text); margin-top: 4px; }
+
+/* Пилюли (Лаборатория, бейдж «авто») */
+.pill { display: inline-block; white-space: nowrap; border-radius: 9999px; padding: 3px 10px;
+  font: 600 10px var(--font-ui); letter-spacing: .1em; text-transform: uppercase;
+  background: var(--frost); color: var(--gray-text); }
+.pill.niche { background: rgba(117, 154, 196, .15); color: var(--accent-blue-text); }
+.pill.auto { background: var(--info-soft); color: var(--accent-blue-text); }
+.pill.niche-new { background: var(--warning-soft); color: var(--warning-text); }
+.pill.no-prompt { background: var(--error-soft); color: var(--error-text); }
+/* Ширина доказательной базы рецепта (sections.evidence_level): оператору в
+   очереди одобрения нужно с одного взгляда видеть, на скольких роликах стоит
+   приём. Зелёный — широкая база (6+ референсов, удвоенный минимум паттерна),
+   янтарный — на нижней границе (3: один отвалившийся референс делает приём
+   невалидным). Средний уровень намеренно без цвета: если красить всё, метка
+   перестаёт различать. Цвет не единственный носитель смысла — рядом всегда
+   стоит само число и подпись (требование доступности кита). */
+.pill.ev-wide { background: var(--success-soft); color: var(--success-text); }
+.pill.ev-thin { background: var(--warning-soft); color: var(--warning-text); }
+.ev-count.ev-wide { color: var(--success-text); font-weight: 600; }
+.ev-count.ev-thin { color: var(--warning-text); font-weight: 600; }
+/* «Не наша тема» — приглушённо: это причина НЕ тратить внимание на рецепт, а не
+   задача. Раньше стояла та же плашка, что у «нет промпта» (красная), и оператор
+   не понимал, надо ли что-то делать. */
+.pill.excluded { background: var(--frost); color: var(--gray-text); }
+.excluded-line { opacity: .72; }
+
+/* Ясность по разделам (Фаза 3): лид, служебные строки, ссылки-референсы */
+.lead { margin-top: 8px; max-width: 62ch; font: 400 13px/1.5 var(--font-ui); color: var(--gray-text); }
+.page-head > div { min-width: 0; }
+/* мелкая служебная подпись под смыслом строки (ID, пометка «тест») */
+.row-note { font-size: 10.5px; color: var(--gray-text); margin-top: 3px; }
+/* тех-детали под катом: сырой дамп/причина ошибки — «прятать, не удалять» */
+details.tech, details.report-dump { margin-top: 6px; }
+details.tech > summary,
+details.report-dump > summary { font: 400 11px var(--font-ui); color: var(--gray-text); cursor: pointer; }
+details.tech .mono { display: block; font-size: 10.5px; color: var(--gray-text); word-break: break-word; }
+.hook-title { font: 600 20px/1.3 var(--font-display); margin: 8px 0 16px; text-wrap: balance; }
+.group-title { font: 600 15px var(--font-ui); margin-bottom: 4px; }
+.muted-line { font: 400 12.5px/1.5 var(--font-ui); color: var(--gray-text); margin: 4px 0; }
+.metric-line { font: 400 11.5px var(--font-ui); color: var(--gray-text); margin: 4px 0;
+  font-variant-numeric: tabular-nums; }
+.url-row { font-size: 12px; margin: 2px 0; overflow-wrap: anywhere; word-break: break-word; }
+.queue td.num, .queue th.num { font-variant-numeric: tabular-nums; }
+.sort-row { align-items: center; }
+.sort-label { font: 600 10px var(--font-ui); letter-spacing: .16em; text-transform: uppercase; color: var(--gray-text); }
+
+/* Доступность (Фаза 6): текст только для скринридера + ссылка «к содержимому».
+   Видимой вёрстки не меняют; skip-link проявляется при фокусе с клавиатуры. */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.skip-link { position: absolute; left: -9999px; top: 0; z-index: 500;
+  background: var(--primary); color: #fff; padding: 10px 16px; border-radius: 0 0 6px 0;
+  font: 600 12px var(--font-ui); text-decoration: none; }
+.skip-link:focus { left: 0; }
+
+/* Утилиты ДС вместо инлайн-стилей (Фаза 5): шкала вертикальных отступов и
+   несколько повторяющихся ролей текста. Инлайны остаются только там, где значение
+   вычисляется (ширина прогресс-бара, высота столбца графика). */
+.mt-8 { margin-top: 8px; } .mt-12 { margin-top: 12px; }
+.mt-14 { margin-top: 14px; } .mt-16 { margin-top: 16px; }
+.w-full { width: 100%; }
+.grow { flex: 1; }
+.inline-form { display: inline; }
+.hint { font: 400 12px var(--font-ui); color: var(--gray-text); }
+.hint-plain { font: 400 12.5px var(--font-ui); }
+.meta-inline { font-size: 10.5px; color: var(--gray-text); }
+.notice-line { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.row--flat { border-top: none; padding-top: 0; }
+.row-name { font-weight: 600; }
+.report--tight { padding: 8px 0; }
+.item-title { font: 600 14px var(--font-ui); margin: 6px 0 2px; }
+.item-sub { font-size: 12.5px; color: var(--gray-text); margin-bottom: 6px; }
+.shooting-list { display: flex; flex-direction: column; gap: 32px; }
+.shooting-group { display: flex; flex-direction: column; gap: 12px; }
+.shooting-group .card { margin: 0; }
+/* Назначение исполнителя (2026-07-28): метка + выбор слота одной строкой.
+   Стоит сразу под хуком — это первое решение продюсера по готовому сценарию. */
+.assign-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+  margin: 0 0 14px; }
+.assign-form { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.assign-form select { padding: 7px 10px; border: 1px solid var(--silver);
+  border-radius: 6px; font: 600 12px var(--font-ui); color: var(--ink); background: #fff; }
+.pill.assigned { background: var(--info-soft); color: var(--accent-blue-text); }
+/* Кнопки действия в ряду с полем — того же роста, что поле, а не блочные */
+.btn-compact { padding: 7px 14px; font-size: 11px; letter-spacing: 1px; }
+/* Публикация из очереди съёмки (UTM-контур): URL + аккаунт + заметка одной
+   строкой, селект — как у назначения исполнителя. */
+.publish-form { display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  flex: 1; min-width: 260px; }
+.publish-form select { padding: 7px 10px; border: 1px solid var(--silver);
+  border-radius: 6px; font: 600 12px var(--font-ui); color: var(--ink); background: #fff; }
+
+/* Вторичная кнопка (ghost) */
+.btn-secondary { background: #fff; border: 1px solid var(--silver); color: var(--ink);
+  border-radius: 4px; padding: 12px 20px; font: 600 13px var(--font-ui);
+  letter-spacing: 1.5px; text-transform: uppercase; transition: background .12s var(--ease); }
+.btn-secondary:hover { background: var(--frost); }
+
+/* Очередь Лаборатории — карточки формул/ниш */
+.queue-card { border-top: 1px solid var(--frost); padding: 14px 0; }
+.queue-card:first-child { border-top: none; }
+.queue-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 10px; }
+.queue-line { font-size: 12.5px; margin: 3px 0; }
+.queue-line b { font-weight: 600; }
+.queue-list { margin: 2px 0 6px 18px; padding: 0; font-size: 12.5px; color: var(--gray-text); }
+.queue-list li { margin: 2px 0; }
+.reason-input { flex: 1; border: 1px solid var(--silver); border-radius: 4px;
+  padding: 8px 12px; font: 400 12.5px var(--font-ui); }
+.reason-input:focus { outline: none; box-shadow: var(--focus-ring); border-color: var(--accent-blue); }
+/* P5.12: дропдаун кода причины reject — блочная ширина, палитра DS (#fff/--ink как .period select). */
+select.reason-select { width: 100%; background: #fff; color: var(--ink); }
+
+/* ---------- Адаптивность (Фаза 4 UX-доводки) ---------------------------------
+   Десктоп не трогаем: до 1024px раскладка ровно та же, что была. Ниже —
+   сайдбар сворачивается в бургер, колонки стекаются, таблицы скроллятся. */
+
+/* Таблица шире экрана скроллит ВНУТРИ карточки, а не обрезается (был инлайновый
+   overflow:hidden, из-за которого на планшете отрезались крайние колонки). */
+.card--table { padding: 0; overflow-x: auto; }
+
+/* Бургер: чекбокс невидим, но фокусируем с клавиатуры (Space открывает меню). */
+.nav-toggle { position: absolute; width: 1px; height: 1px; opacity: 0; margin: 0; }
+.nav-burger { display: none; }
+.nav-toggle:focus-visible ~ .sidebar .nav-burger { box-shadow: var(--focus-ring); }
+
+/* Длинные описательные поля очереди «Аналитики»: 3 строки + «показать полностью».
+   Полный текст остаётся по запросу — жёсткую обрезку не возвращаем (правка 246984a). */
+details.more > summary { cursor: pointer; list-style: none; }
+details.more > summary::-webkit-details-marker { display: none; }
+details.more > summary::after { content: " показать полностью"; color: var(--accent-blue-text); font-size: 11.5px; }
+details.more[open] > summary::after { content: " свернуть"; }
+.clamp { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+details.more[open] .clamp { display: block; -webkit-line-clamp: unset; overflow: visible; }
+
+/* Тумблеры карточки рецепта («Запреты», «Референсы»). До правки это были голые
+   <details>: нативный треугольник ОС, строчная подпись и счётчик только у одного —
+   единственные неоформленные раскрывашки во всём дашборде (остальные — .tech,
+   .more, .report-dump). Плюс их разрывала строка метрик. Теперь: общий ряд перед
+   метрикой, подпись в регистре прочих полей карточки, свой шеврон, счётчик всегда. */
+.disclosure-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 6px; }
+details.disclosure { flex: 1 1 240px; min-width: 0; border: 1px solid var(--frost);
+  border-radius: 6px; background: #fff; }
+details.disclosure[open] { border-color: var(--silver); }
+details.disclosure > summary { display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; cursor: pointer; list-style: none;
+  font: 600 12.5px var(--font-ui); color: var(--ink);
+  border-radius: 6px; transition: background .12s var(--ease); }
+details.disclosure > summary::-webkit-details-marker { display: none; }
+details.disclosure > summary:hover { background: var(--frost); }
+/* Шеврон рисуем сами: нативный маркер — глиф ОС, он выпадал из типографики кита
+   и по-разному выглядел в разных браузерах. Уголок из двух бордеров, поворот на
+   раскрытии; transform уважает prefers-reduced-motion ниже. */
+.disclosure-chevron { flex-shrink: 0; width: 6px; height: 6px;
+  border-right: 1.5px solid var(--gray-text); border-bottom: 1.5px solid var(--gray-text);
+  transform: rotate(-45deg); margin-left: 2px;
+  transition: transform .15s var(--ease); }
+details.disclosure[open] .disclosure-chevron { transform: rotate(45deg); }
+.disclosure-count { margin-left: auto; font: 600 10px var(--font-ui);
+  letter-spacing: .1em; color: var(--gray-text); background: var(--frost);
+  border-radius: 9999px; padding: 2px 8px; font-variant-numeric: tabular-nums; }
+details.disclosure[open] > summary { border-radius: 6px 6px 0 0; }
+.disclosure-body { padding: 2px 12px 10px; border-top: 1px solid var(--frost); }
+.disclosure-body .queue-list { margin: 8px 0 0 18px; }
+/* Структура ролика — нумерованная: порядок сцен и есть смысл списка. */
+.queue-steps { list-style: decimal; color: var(--ink); }
+.queue-steps li { margin: 3px 0; }
+.disclosure-body .url-row:first-child { margin-top: 8px; }
+@media (prefers-reduced-motion: reduce) { .disclosure-chevron { transition: none; } }
+
+@media (max-width: 1023px) {
+  .shell { flex-direction: column; }
+  .sidebar { width: 100%; height: auto; position: sticky; top: 0; z-index: 300; padding: 12px 0; }
+  .brand { padding: 0 16px; }
+  .nav-burger { display: flex; align-items: center; justify-content: center; margin-left: auto;
+    width: 40px; height: 40px; flex-shrink: 0; border: 1px solid var(--hairline-dark);
+    border-radius: 6px; color: #fff; font-size: 18px; cursor: pointer; }
+  .nav, .sidebar-foot { display: none; }
+  .nav-toggle:checked ~ .sidebar .nav { display: flex; margin-top: 14px; }
+  .nav-toggle:checked ~ .sidebar .sidebar-foot { display: flex; margin-top: 14px; }
+  .main { padding: 20px 16px; }
+  .two-col { grid-template-columns: 1fr; }
+  /* всплывашки «Системы» и «Уведомления» на узком экране раскрываются вниз и
+     по ширине блока: 320px рядом с кнопкой уехали бы за край телефона */
+  .sys-pop, .notif-pop { position: static; width: 100%; bottom: auto; }
+}
+
+/* Очередь + карточка сценария рядом только когда обеим хватает места: на 1024
+   таблица ужималась до 270px и резала колонки «Статус» и «Дата» без намёка.
+   «Обзор» делит колонки по тому же порогу и по той же причине — 1280 это та
+   ширина, на которой ленту и мерили. Ниже лента встаёт НАВЕРХ, над плитками
+   (решение владельца): 15 строк над плитками — прокрутка, под плитками —
+   потерянный экран. */
+@media (max-width: 1279px) {
+  .briefs-layout { grid-template-columns: 1fr; }
+  .overview-cols { grid-template-columns: 1fr; }
+  .ov-side { order: -1; }
+}
+
+@media (max-width: 767px) {
+  .stat-row { grid-template-columns: repeat(2, 1fr); }
+  /* Широкие плитки становятся обычными: в сетке 2×2 «span 2» отдал бы им целый
+     ряд, а соседняя доля осталась бы дырой. */
+  .stat--wide { grid-column: auto; }
+  .page-head { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .chips { flex-wrap: wrap; }
+  h1 { font-size: 26px; }
+  /* Действия остаются в своей колонке и на мобильном: перенос вниз оставлял
+     под каждым шагом одинокую стрелку «→» — восемь сироток подряд. */
+  /* 44+8+44: колонка одинакова у строк с кнопкой ▶ и без неё — иначе правые
+     края полосок разъезжаются, как это было до правки на десктопе */
+  .tl-actions { min-width: 96px; }
+  .tl-open, .stage-run { width: 44px; height: 44px; }   /* цель нажатия под палец */
+  .script-box { font-size: 12px; }
+  /* Узкие ячейки не режем по слову: таблица держит минимум и скроллит внутри карточки
+     (иначе «Идея ролика» ломалась в столбик по одному слову). */
+  .card--table table.queue { min-width: 440px; }
+  .queue th, .queue td { padding: 10px 8px; }
+}
+
+@media (max-width: 479px) {
+  .stat-row { grid-template-columns: 1fr; }
+  .main { padding: 16px 12px; gap: 16px; }
+  .card { padding: 16px; }
+  .brand-mark { width: 32px; height: 32px; }
+  h1 { font-size: 22px; }
+  .actions { flex-direction: column; }
+  .actions .btn-primary, .actions .btn-danger-outline { width: 100%; }
+}
+
+/* Карточка ворот «Включение промпта темы» в лаборатории (2026-07-26). Полный
+   текст промпта живёт ЗДЕСЬ, а не в ленте: лента опрашивается htmx раз в 2 с и
+   схлопывала бы раскрытый <details> при каждом свопе. */
+.gate-item { padding: 10px 0; border-top: 1px solid var(--frost); }
+.gate-item:first-of-type { border-top: none; }
+.gate-draft { margin-top: 8px; }
+.gate-draft > summary { cursor: pointer; font: 600 12px var(--font-ui);
+  color: var(--accent-blue-text); padding: 6px 0; }
+.gate-prompt-text { max-height: 60vh; overflow: auto; margin: 8px 0;
+  padding: 12px 14px; background: var(--frost); border: 1px solid var(--silver);
+  border-radius: 6px; font: 400 11.5px/1.55 var(--font-mono);
+  white-space: pre-wrap; word-break: break-word; }
+.gate-draft .actions { display: flex; gap: 12px; align-items: center;
+  flex-wrap: wrap; }

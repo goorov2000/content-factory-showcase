@@ -1,0 +1,6 @@
+# сгенерировано `cf codex-sync` — не править руками
+interface:
+  display_name: "Pattern Analyzer"
+  short_description: "Pattern Analyzer - анализ паттернов профилированного батча"
+policy:
+  allow_implicit_invocation: false

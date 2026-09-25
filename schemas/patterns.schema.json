@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CF pattern analysis output",
+  "type": "object",
+  "required": ["meta", "patterns"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["niche", "generated_at", "source_profile"],
+      "properties": {
+        "niche": {"type": "string", "minLength": 1},
+        "generated_at": {"type": "string"},
+        "source_profile": {"type": "string", "minLength": 1},
+        "source_tab": {
+          "description": "Вкладка-источник батча (raw_tiktok | raw_instagram). Дублирует тег в имени файла; читается дашбордом для определения платформы паттернов.",
+          "type": "string"
+        }
+      }
+    },
+    "patterns": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["pattern_id", "description", "evidence", "confidence"],
+        "properties": {
+          "pattern_id": {"type": "string", "minLength": 1},
+          "description": {"type": "string", "minLength": 10},
+          "evidence": {
+            "type": "object",
+            "required": ["source_urls", "avg_views", "avg_er"],
+            "properties": {
+              "source_urls": {
+                "type": "array",
+                "minItems": 3,
+                "uniqueItems": true,
+                "items": {"type": "string", "pattern": "^https?://"}
+              },
+              "avg_views": {"type": "number"},
+              "avg_er": {"type": "number"},
+              "visual_refs": {
+                "description": "Визуальные основания «обложка видео X» / «кадр N видео X» (машинная форма, тикет 08 визуального контура). ОПЦИОНАЛЬНО: чисто текстовый паттерн легален.",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["source_url", "media"],
+                  "properties": {
+                    "source_url": {"type": "string", "pattern": "^https?://"},
+                    "media": {"enum": ["cover", "frame"]},
+                    "frame_index": {"type": "integer", "minimum": 1}
+                  },
+                  "additionalProperties": false,
+                  "if": {"properties": {"media": {"const": "frame"}}},
+                  "then": {"required": ["source_url", "media", "frame_index"]}
+                }
+              }
+            }
+          },
+          "confidence": {"enum": ["high", "medium", "low"]},
+          "conditions": {"type": "string"},
+          "human_review": {"type": "boolean"}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+interface:
+  display_name: "CF UI Rethink"
+  short_description: "Переосмысление интерфейса CF под SMM-продюсера: рамка, IA, дизайн, реализация"
+policy:
+  # большой дизайн-воркфлоу — запуск только явный ($cf-ui-rethink)
+  allow_implicit_invocation: false

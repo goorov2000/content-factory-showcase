@@ -1,0 +1,9 @@
+[Unit]
+Description=CF: сбор Instagram (расписание)
+
+[Timer]
+OnCalendar=*-*-* 08:20:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

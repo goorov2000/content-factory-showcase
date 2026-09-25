@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "source-proposal",
+  "$defs": {
+    "source_marker": {
+      "description": "Маркер источника в грамматике source_query: 'hashtag:#<тег>' или 'query:<запрос>' — ровно то, что строит cf.collect.sources.source_marker и что лежит в колонке source_query сырых вкладок. Префикс kind обязателен: cf.sourcepatch._strip режет строку по первому ':' и берёт хвост, поэтому голое 'mensoutfits' даёт пустой query, а несколько таких записей схлопываются дедупликацией в одну (аудит 2026-07-26).",
+      "type": "string",
+      "pattern": "^(hashtag:#[^#\\s]+|query:[^\\s](.*[^\\s])?)$"
+    }
+  },
+  "type": "object",
+  "required": ["platform", "generated_at", "status", "remove", "add"],
+  "properties": {
+    "platform": {"enum": ["tiktok", "instagram"]},
+    "generated_at": {"type": "string"},
+    "status": {"enum": ["pending", "approved", "rejected"]},
+    "applied_at": {"type": "string"},
+    "remove": {"type": "array", "items": {
+      "type": "object", "required": ["source", "reason", "stats"],
+      "properties": {
+        "source": {"$ref": "#/$defs/source_marker"},
+        "reason": {"type": "string", "minLength": 10},
+        "stats": {"type": "object"}
+      }}},
+    "add": {"type": "array", "items": {
+      "type": "object", "required": ["source", "kind", "evidence"],
+      "properties": {
+        "source": {"$ref": "#/$defs/source_marker"},
+        "kind": {"enum": ["hashtag", "query"]},
+        "niche": {"type": "string", "minLength": 1},
+        "evidence": {"type": "string", "minLength": 10}
+      }}}
+  }
+}

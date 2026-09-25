@@ -1,0 +1,79 @@
+{# Секция «Заказы» (UTM-контур, тикеты 03–04). Живёт на странице «Деньги»
+   (/money); контекст — sections.orders_context внутри money_context
+   (+ runlog_warning/error у страницы). Кандидаты сверху: они ждут решения.
+   Кнопки решений — все статусы, кроме текущего: у кандидата три решения, у
+   решённого — передумать (статусы меняет только человек, сборщик их не трогает). #}
+<section class="orders-section">
+  {% if not orders %}
+  <div class="empty-state">Заказов пока нет.<br>
+    Кандидаты появятся после утреннего сбора покупок из Метрики,
+    а заказ, не дошедший до e-commerce, можно внести формой ниже.</div>
+  {% else %}
+  <div class="card card--table">
+    <table class="queue">
+      <caption class="sr-only">Реестр заказов</caption>
+      <thead><tr>
+        <th scope="col">Дата</th><th class="num" scope="col">Сумма</th>
+        <th scope="col">Аккаунт</th><th scope="col">Ролик</th>
+        <th scope="col">Статус</th><th scope="col">Решение</th>
+      </tr></thead>
+      <tbody>
+        {% for o in orders %}
+        <tr>
+          <td class="mono">{{ o.order_date | fmt_date }}</td>
+          <td class="mono num">{{ o.revenue }} ₽</td>
+          <td>{% if o.account %}<span class="tag">{{ o.account }}</span>
+            {% elif o.utm_campaign %}<span class="hint" title="метка вне реестра аккаунтов">{{ o.utm_campaign }}</span>
+            {% else %}<span class="hint">—</span>{% endif %}</td>
+          <td class="mono">{{ o.reel_id or "—" }}</td>
+          <td><span class="badge {{ o.status_norm }}">{{ status_labels.get(o.status_norm, o.status) }}</span>
+            {% if o.source == "manual" %}<span class="hint">ручной</span>{% endif %}
+            {% if o.notes %}<div class="row-note">{{ o.notes }}</div>{% endif %}
+            <div class="row-note mono">{{ o.order_id }}</div></td>
+          <td>
+            <form method="post" action="/orders/{{ o.order_id }}/status" class="order-status-form">
+              {% for value, label in decision_buttons %}
+              {% if value != o.status_norm %}
+              <button class="btn-secondary btn-compact" type="submit"
+                      name="status" value="{{ value }}">{{ label }}</button>
+              {% endif %}
+              {% endfor %}
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="field-label">РУЧНОЙ ЗАКАЗ</div>
+    <p class="hint">Для заказа, не дошедшего до e-commerce Метрики: запишется
+      сразу подтверждённым с пометкой «ручной», сбор его не тронет.</p>
+    {% if accounts %}
+    <form method="post" action="/orders/manual" class="manual-order-form">
+      <label class="sr-only" for="mo-date">Дата заказа</label>
+      <input class="reason-input" id="mo-date" type="date" name="order_date" required>
+      <label class="sr-only" for="mo-revenue">Сумма заказа, ₽</label>
+      <input class="reason-input" id="mo-revenue" type="number" name="revenue"
+             min="1" step="any" required placeholder="Сумма, ₽">
+      <label class="sr-only" for="mo-account">Аккаунт</label>
+      <select id="mo-account" name="account">
+        {% for a in accounts %}
+        <option value="{{ a.slug }}">{{ a.slug }}</option>
+        {% endfor %}
+      </select>
+      <label class="sr-only" for="mo-notes">Комментарий</label>
+      <input class="reason-input" id="mo-notes" type="text" name="notes"
+             placeholder="Комментарий (необязательно)…">
+      <button class="btn-secondary btn-compact" type="submit">Добавить заказ</button>
+    </form>
+    {% else %}
+    {# Пустой реестр не прячет функцию молча — показывает причину (образец —
+       слоты исполнителей в очереди съёмки). #}
+    <span class="hint">Ручной заказ не добавить: реестр аккаунтов пуст —
+      заполни accounts в cf.config.json.</span>
+    {% endif %}
+  </div>
+</section>

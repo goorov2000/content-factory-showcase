@@ -1,0 +1,6 @@
+# сгенерировано `cf codex-sync` — не править руками
+interface:
+  display_name: "Formula Reviewer"
+  short_description: "Formula Reviewer - ревью черновика рецепта перед машинным одобрением"
+policy:
+  allow_implicit_invocation: false

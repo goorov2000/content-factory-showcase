@@ -1,0 +1,6 @@
+# сгенерировано `cf codex-sync` — не править руками
+interface:
+  display_name: "Niche Pipeline"
+  short_description: "Niche Pipeline - профиль + анализ + черновики формул одной ниши (для фан-аута)"
+policy:
+  allow_implicit_invocation: false

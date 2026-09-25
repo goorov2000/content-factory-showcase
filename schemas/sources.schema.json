@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "sources-registry",
+  "description": "Реестр источников сбора sources/<platform>.json (спека §2.1): active читает ежедневный сбор, candidate — exploration-квота, paused/retired — выключены. Счётчики runs_count/last_run_at/rows_passed_gate пишет раннер exploration.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["query", "kind", "niche", "status", "origin", "added_at"],
+    "properties": {
+      "query": {"type": "string", "minLength": 1},
+      "kind": {"enum": ["hashtag", "search"]},
+      "niche": {"type": "string", "minLength": 1},
+      "status": {"enum": ["active", "candidate", "paused", "retired"]},
+      "origin": {"enum": ["operator", "tuner", "harvest", "discovery"]},
+      "added_at": {"type": "string", "minLength": 4},
+      "runs_count": {"type": "integer", "minimum": 0},
+      "last_run_at": {"type": "string"},
+      "rows_passed_gate": {"type": "integer", "minimum": 0},
+      "retired_at": {"type": "string"},
+      "retired_reason": {"type": "string"}
+    },
+    "additionalProperties": false
+  }
+}

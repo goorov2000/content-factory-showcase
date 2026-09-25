@@ -1,0 +1,26 @@
+[
+  {
+    "query": "примерхэштег",
+    "kind": "hashtag",
+    "niche": "мужские-образы",
+    "status": "active",
+    "origin": "operator",
+    "added_at": "2026-07-01",
+    "runs_count": 3,
+    "last_run_at": "2026-07-20T08:00:00+00:00",
+    "rows_passed_gate": 9
+  },
+  {
+    "query": "примерхэштегвторой",
+    "kind": "hashtag",
+    "niche": "мужские-образы",
+    "status": "retired",
+    "origin": "harvest",
+    "added_at": "2026-07-10",
+    "runs_count": 2,
+    "last_run_at": "2026-07-18T08:00:00+00:00",
+    "rows_passed_gate": 0,
+    "retired_at": "2026-07-25",
+    "retired_reason": "пример: за два прогона ни одной строки через гейт"
+  }
+]

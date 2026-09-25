@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <div class="eyebrow">ВЫШЕДШИЕ РОЛИКИ И ИХ ПОКАЗАТЕЛИ</div>
+    <h1>РЕЗУЛЬТАТЫ</h1>
+    <p class="lead">Что сняли и как это зашло: просмотры и вовлечённость по каждому ролику.</p>
+  </div>
+  <nav class="chips" aria-label="Вкладки раздела">
+    {% for key, label in [("reels","Опубликованные ролики"),("metrics","Просмотры и вовлечённость")] %}
+    <a class="chip {{ 'active' if tab == key }}" href="/performance?tab={{ key }}"{{ ' aria-current="true"' | safe if tab == key }}>
+      {{ label }}{% if counts.get(key) is not none %} · {{ counts[key] }}{% endif %}</a>
+    {% endfor %}
+    {# Фаза 3: раздел перестаёт быть тупиком — мостик туда, откуда берутся ролики. #}
+    <a class="chip" href="/briefs">← к сценариям</a>
+  </nav>
+</header>
+
+{% if error %}
+<div class="banner error">Не удалось загрузить результаты. Обновите страницу или попробуйте позже.
+  <details class="tech"><summary>Техническая причина</summary><span class="mono">{{ error }}</span></details></div>
+{% elif not rows %}
+{# Фаза 3: пустое состояние приглашает к действию, а не констатирует «данных нет». #}
+<div class="empty-state">Здесь появятся вышедшие ролики и их просмотры.<br>
+  Ролик попадёт сюда, когда вы отметите сценарий опубликованным.<br>
+  <a href="/briefs">Перейти к сценариям</a></div>
+{% else %}
+<div class="card card--table">
+  {% if tab == "reels" %}
+  <table class="queue">
+    <caption class="sr-only">Опубликованные ролики</caption>
+    <thead><tr><th scope="col">Ролик</th><th scope="col">Площадка</th><th scope="col">Дата публикации</th><th scope="col">Заметки со съёмки</th><th scope="col">Ссылка</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.brief_hook or "—" }}
+          <div class="row-note mono">{{ r.reel_id }}{% if r.brief_id %} · {{ r.brief_id }}{% endif %}</div></td>
+        <td>{% if r.platform %}<span class="tag">{{ r.platform }}</span>{% else %}<span class="hint">—</span>{% endif %}</td>
+        <td class="mono">{{ r.published_at | fmt_date }}</td>
+        <td>{{ (r.production_notes or "—") | string | truncate(60, True, "…") }}</td>
+        <td>{% if (r.post_url or "").startswith("http") %}<a href="{{ r.post_url }}" target="_blank" rel="noopener"
+               aria-label="Открыть ролик на площадке" title="Открыть ролик на площадке">↗</a>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <table class="queue">
+    <caption class="sr-only">Просмотры и вовлечённость роликов</caption>
+    <thead><tr><th scope="col">Ролик</th><th scope="col">Площадка</th><th class="num" scope="col">Просмотры</th>
+      <th class="num" scope="col">Вовлечённость</th><th scope="col">Дата замера</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.brief_hook or "—" }}
+          <div class="row-note mono">{{ r.reel_id }}{% if r.brief_id %} · {{ r.brief_id }}{% endif %}</div></td>
+        <td>{% if r.platform %}<span class="tag">{{ r.platform }}</span>{% else %}<span class="hint">—</span>{% endif %}</td>
+        <td class="mono num">{{ r.views | fmt_views }}</td>
+        <td class="mono num">{{ r.er | fmt_pct }}</td>
+        <td class="mono">{{ r.measured_at | fmt_date }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

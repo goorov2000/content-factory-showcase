@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <div class="eyebrow">ГОТОВО К СЪЁМКЕ</div>
+    <h1>ОЧЕРЕДЬ СЪЁМКИ</h1>
+    <p class="lead">Сценарии, одобренные к съёмке. Раздайте криэйторам и отметьте снятые.</p>
+  </div>
+  <nav class="chips" aria-label="Действия раздела">
+    <a class="chip" href="/briefs">← к сценариям</a>
+    <a class="chip" href="/briefs/shooting-list?format=md">Скачать список</a>
+  </nav>
+</header>
+
+{% if runlog_warning %}<div class="banner warn">{{ runlog_warning }}</div>{% endif %}
+{% if platform_warning %}<div class="banner warn">{{ platform_warning }}</div>{% endif %}
+{% if error %}
+<div class="banner error">Не удалось загрузить очередь. Обновите страницу или попробуйте позже.
+  <details class="tech"><summary>Техническая причина</summary><span class="mono">{{ error }}</span></details></div>
+{% elif not groups %}
+<div class="empty-state">Пока нет сценариев, готовых к съёмке.<br>
+  Новые появятся здесь после одобрения — их можно посмотреть в разделе
+  <a href="/briefs">«Сценарии»</a>.</div>
+{% else %}
+<div class="shooting-list">
+  {% for niche, group in groups %}
+  <section class="shooting-group">
+    {# Фаза 3: тема — заголовок уровня секции (h2), хук карточки — h3: структура
+       «тема → её сценарии» читается и с клавиатуры, и скринридером. #}
+    <h2 class="group-title">Тема: {{ niche | niche_label }} — {{ group | length }}
+      {{ group | length | plural_ru("сценарий", "сценария", "сценариев") }}</h2>
+    {% for b in group %}
+    <div class="card">
+      <div class="eyebrow">Сценарий {{ loop.index }} из {{ group | length }}{% if b.generated_at %} · добавлен {{ b.generated_at | fmt_date }}{% endif %}</div>
+      <h3 class="hook-title">{{ b.hook }}</h3>
+      {# Назначение исполнителя (решение владельца 2026-07-28, С4). Слоты — это
+         значения поля, а не люди: при найме слот переименовывается одной правкой
+         в cf.config.json. Сценарий из очереди не уходит: назначение видно
+         меткой, его можно сменить и снять. #}
+      <div class="assign-row">
+        {% if b.assignment %}<span class="pill assigned">{{ b.assignment }}</span>{% endif %}
+        {% if creator_slots %}
+        <form method="post" action="/briefs/{{ b.brief_id }}/assign" class="assign-form">
+          <label class="sr-only" for="slot-{{ b.brief_id }}">Исполнитель сценария «{{ b.hook }}»</label>
+          <select id="slot-{{ b.brief_id }}" name="slot">
+            {% for slot in creator_slots %}
+            <option value="{{ slot }}"{{ ' selected' | safe if slot == b.creator_slot }}>{{ slot }}</option>
+            {% endfor %}
+          </select>
+          <button class="btn-secondary btn-compact" type="submit">Отдал в работу</button>
+          {# Снятие — отдельным полем, а не пустым значением того же select:
+             две кнопки с одним именем прислали бы два значения slot. #}
+          {% if b.assignment %}<button class="btn-secondary btn-compact" type="submit"
+            name="unassign" value="1">Снять</button>{% endif %}
+        </form>
+        {% else %}
+        <span class="hint">Назначать некого: список слотов исполнителей пуст
+          (cf.config.json → dashboard.creator_slots).</span>
+        {% endif %}
+      </div>
+      {# Публикация из очереди (UTM-контур): снятый ролик отмечается там же, где
+         раздавалась съёмка, — URL + аккаунт из реестра accounts. Та же форма, что
+         на карточке сценария; return_to возвращает в очередь, а не на карточку. #}
+      <div class="assign-row">
+        <form method="post" action="/briefs/{{ b.brief_id }}/published" class="publish-form">
+          <input type="hidden" name="return_to" value="shooting">
+          <label class="sr-only" for="pub-url-{{ b.brief_id }}">Ссылка на опубликованный ролик «{{ b.hook }}»</label>
+          <input class="reason-input" id="pub-url-{{ b.brief_id }}" type="url" name="url" required
+                 placeholder="https://tiktok.com/@…/video/…">
+          {% if accounts %}
+          <label class="sr-only" for="pub-account-{{ b.brief_id }}">Аккаунт публикации</label>
+          <select id="pub-account-{{ b.brief_id }}" name="account">
+            {% for a in accounts %}
+            <option value="{{ a.slug }}">{{ a.slug }}</option>
+            {% endfor %}
+          </select>
+          {% endif %}
+          <label class="sr-only" for="pub-notes-{{ b.brief_id }}">Заметки со съёмки</label>
+          <input class="reason-input" id="pub-notes-{{ b.brief_id }}" type="text" name="notes"
+                 placeholder="Заметки со съёмки (необязательно)…">
+          <button class="btn-secondary btn-compact" type="submit">Опубликован</button>
+        </form>
+        {% if not accounts %}
+        <span class="hint">Публикация запишется без аккаунта: реестр аккаунтов пуст —
+          заполни accounts в cf.config.json.</span>
+        {% endif %}
+      </div>
+      <div class="field-label">СЦЕНАРИЙ</div>
+      <div class="script-box">{{ b.script }}</div>
+      {% if b.reference_urls %}
+      <div class="field-label mt-16">ПРИМЕРЫ РОЛИКОВ — ОРИЕНТИР ПО СТИЛЮ</div>
+      {% for url in b.reference_urls %}
+      <div class="url-row">{% if url.startswith("http://") or url.startswith("https://") %}<a href="{{ url }}" target="_blank" rel="noopener">{{ url | link_label }}</a>{% else %}{{ url }}{% endif %}</div>
+      {% endfor %}
+      {% endif %}
+      {# Служебные ID — под катом (правило «прятать, не удалять»). #}
+      <details class="tech"><summary>Служебные ID</summary>
+        <div class="mono">сценарий: {{ b.brief_id }}</div>
+        <div class="mono">рецепт: {{ b.formula_id or "—" }}</div>
+      </details>
+    </div>
+    {% endfor %}
+  </section>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

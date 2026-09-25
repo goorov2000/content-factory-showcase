@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} · CF · JE LA PECHE</title>
+  <link rel="stylesheet" href="/static/style.css?v=18">
+  <script src="/static/htmx.min.js" defer></script>
+  <script src="/static/timeline.js?v=2" defer></script>
+  <script src="/static/confirm.js?v=1" defer></script>
+  <script src="/static/notifications.js?v=1" defer></script>
+  <script src="/static/systems.js?v=1" defer></script>
+  <script src="/static/toasts.js?v=1" defer></script>
+</head>
+<body>
+{# Фаза 6: первый таб-стоп — «к содержимому», чтобы с клавиатуры не проходить
+   весь сайдбар на каждой странице. Виден только при фокусе. #}
+<a class="skip-link" href="#main">Перейти к содержимому</a>
+<div class="shell">
+  {# Фаза 4: бургер — чекбокс перед сайдбаром (CSS-переключатель без JS, переживает
+     htmx-свопы). На десктопе чекбокс ни на что не влияет: меню видно всегда. #}
+  <input class="nav-toggle" type="checkbox" id="nav-toggle" aria-label="Показать меню разделов">
+  <aside class="sidebar">
+    <div class="brand">
+      <img class="brand-mark" src="/static/logo-symbol-white.svg?v=2" alt="" width="41" height="41">
+      <div>
+        <div class="brand-name">JE LA PECHE</div>
+        <div class="brand-sub">CONTENT FACTORY</div>
+      </div>
+      <label class="nav-burger" for="nav-toggle" aria-hidden="true" title="Меню разделов">☰</label>
+    </div>
+    <nav class="nav" aria-label="Разделы">
+      {# Навбар на языке задач продюсера (§2 UX-спеки): сначала его работа
+         (Сценарии→Очередь съёмки→Результаты→Референсы), потом кухня владельца
+         (Лаборатория, Запуски). href задаём явно — «Очередь съёмки» живёт не на /{key}. #}
+      {% for key, label, href in [
+          ("overview","Обзор","/overview"),
+          ("briefs","Сценарии","/briefs"),
+          ("shooting","Очередь съёмки","/briefs/shooting-list"),
+          ("performance","Результаты","/performance"),
+          ("money","Деньги","/money"),
+          ("sources","Референсы","/sources"),
+          ("lab","Лаборатория","/lab"),
+          ("runs","История задач","/runs")] %}
+      <a class="nav-item {{ 'active' if active == key }}" href="{{ href }}"{{ ' aria-current="page"' | safe if active == key }}>{{ label }}{% if key == "briefs" and nav_briefs_pending %}<span class="nav-badge">{{ nav_briefs_pending }}<span class="sr-only"> сценариев ждут решения</span></span>{% endif %}</a>
+      {% endfor %}
+    </nav>
+    <div class="sidebar-foot">
+      {% if health %}{% include "partials/health.html" %}{% endif %}
+      {# «Уведомления» на месте кнопки «Обновить данные» (решение владельца
+         2026-07-28, С2/С3). Содержимое — производная от состояния завода:
+         строка живёт ровно пока живо условие и исчезает сама, когда условие
+         расшилось. Хранилища и отметки «прочитано» нет — рестарт дашборда
+         ничего не теряет. Кнопка одна на все семь экранов и служит целью
+         улетающего тоста. #}
+      {% set notif = notifications() %}
+      <div class="notif">
+        <button class="btn-outline-dark notif-btn" id="notif-btn" type="button"
+                aria-expanded="false" aria-controls="notif-panel">Уведомления{% if notif %}<span
+          class="notif-count">{{ notif | length }}<span class="sr-only"> требуют действия</span></span>{% endif %}</button>
+        <div class="notif-pop" id="notif-panel" role="group" aria-labelledby="notif-btn"
+             tabindex="-1" hidden>
+          <div class="notif-head">ЧТО ТРЕБУЕТ ДЕЙСТВИЯ</div>
+          {% for row in notif %}
+          <div class="notif-row">{% if row.href %}<a href="{{ row.href }}">{{ row.text }}</a>{% else %}{{ row.text }}{% endif %}</div>
+          {% else %}
+          <div class="notif-row notif-empty">Ничего не требует действия — завод едет сам.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </aside>
+  <main class="main" id="main" tabindex="-1">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{# Тосты (решение владельца 2026-07-28, С1): все сообщения приходят всплывающим
+   уведомлением, полос на странице не остаётся — «сообщения в виде полос ломают
+   страницу, сдвигая элементы ниже». Контейнер fixed и пустой: содержимое
+   собирает toasts.js из payload ниже, поэтому вёрстка не двигается вовсе.
+   aria-live делает текст слышимым скринридеру, а сам список — данные, не
+   разметка: сервер решает, ЧТО сказать, клиент — как показать. #}
+<div class="toasts" id="toasts" aria-live="polite"></div>
+{% set toast_rows = [] %}
+{% if stale %}{% set _ = toast_rows.append({"text": stale_text, "tone": "warn"}) %}{% endif %}
+{# Ворота держат конвейер: тост говорит об этом один раз, а строка в
+   «Уведомлениях» висит, пока ворота держат, и уходит сама после расшивки. #}
+{% if gate_banner %}{% set _ = toast_rows.append({
+     "text": gate_banner, "tone": "error",
+     "href": "/lab", "action": "Разобрать →"}) %}{% endif %}
+<script type="application/json" id="toast-data">{{ toast_rows | tojson }}</script>
+</body>
+</html>

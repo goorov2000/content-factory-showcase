@@ -1,0 +1,24 @@
+{
+  "name": "pets-question-hook",
+  "niche": "pets",
+  "hook_structure": {"timing": "0-3s", "elements": ["question"]},
+  "problem_definition": "Владельцы питомцев не удерживают внимание в первые секунды",
+  "solution_structure": {"beats": ["хук-вопрос", "демонстрация", "результат"]},
+  "visual_requirements": ["крупный план питомца в первые 2 секунды"],
+  "cta_type": "follow",
+  "prohibitions": ["длинное интро", "текст без озвучки дольше 3с"],
+  "evidence": {
+    "source_urls": [
+      "https://tiktok.com/@a/video/1",
+      "https://tiktok.com/@b/video/2",
+      "https://tiktok.com/@c/video/3"
+    ],
+    "avg_views": 120000,
+    "avg_er": 0.081
+  },
+  "confidence": "medium",
+  "conditions": "короткие ролики до 30с в нише pets",
+  "source_pattern_ids": ["pets-hook-question-01"],
+  "version": 1,
+  "updated_at": "2026-07-09T00:00:00+00:00"
+}

@@ -1,0 +1,38 @@
+{% set stage_names = {"raw": "Собранные ролики", "factory": "Контент-завод",
+                       "publish": "Съёмка и публикация", "stats": "Статистика",
+                       "ritual-eval": "Ритуал · недельный eval",
+                       "ritual-tune-sources": "Ритуал · тюнинг источников"} %}
+{# aria-live тут не держится: блок подменяется целиком (outerHTML), а регион,
+   приезжающий в DOM вместе с содержимым, не озвучивается — и озвучивать целую
+   ленту отчётов каждые 3 с всё равно нельзя. Живое объявление есть там, где оно
+   короткое и осмысленное: решение по сценарию (#review-say в briefs.html). #}
+<div id="reports"
+     {% if runner and runner.any_running() %}hx-get="/partials/reports" hx-trigger="every 3s" hx-swap="outerHTML"{% endif %}>
+  {% if runner %}
+  {% for stage, entries in runner.reports.items() %}
+  {% if entries %}
+  <div class="field-label">{{ stage_names.get(stage, stage) }}</div>
+  {% for entry in entries %}
+  {% set view = report_view(entry) %}
+  <div class="report">
+    <div class="report-head mono">{{ entry.at }} · {{ entry.title }}</div>
+    {# Англ-отказ Claude по лимиту → человеческая строка; сырой текст — под катом. #}
+    {% if view.banner %}<div class="banner warn">{{ view.banner }}</div>{% endif %}
+    {% if view.collapse %}
+    {# Машинный дамп (batches=…, NICHE_RESULT, пути) прячем под <details>, чтобы
+       вопрос агента не тонул в технике (§2 спеки, «прятать, не удалять»). #}
+    <details class="report-dump"><summary>технический отчёт</summary><pre class="report-text">{{ view.text }}</pre></details>
+    {% else %}
+    <pre class="report-text">{{ view.text }}</pre>
+    {% endif %}
+  </div>
+  {% endfor %}
+  {% endif %}
+  {% endfor %}
+  {# Пустой плейсхолдер живёт ВНУТРИ #reports: при htmx-подмене он исчезнет, как
+     только звено пришлёт первый отчёт (P2.12). #}
+  {% if not (runner.reports.values() | map("length") | select(">", 0) | list) %}
+  <div class="empty-state">Пока нет отчётов — появятся здесь, как только запустится первый этап.</div>
+  {% endif %}
+  {% endif %}
+</div>

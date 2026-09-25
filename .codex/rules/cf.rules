@@ -1,0 +1,10 @@
+# Правила исполнения команд Codex (Starlark prefix_rule; forbidden > prompt > allow).
+# Проверка: codex execpolicy check --pretty --rules .codex/rules/cf.rules -- git push
+
+# Правило №3 AGENTS.md: auto-push запрещён. Пуш из агента — только когда оператор
+# явно подтвердил конкретный вызов.
+prefix_rule(
+    pattern = ["git", "push"],
+    decision = "prompt",
+    justification = "auto-push запрещён (AGENTS.md, правило №3) — подтверждай осознанно",
+)

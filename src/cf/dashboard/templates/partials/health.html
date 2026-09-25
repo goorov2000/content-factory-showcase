@@ -1,0 +1,15 @@
+{# id — чтобы htmx вернул фокус после свопа раз в 60 с: без него открытый с
+   клавиатуры поповер (:focus-within) закрывался сам собой. #}
+<button class="sys-btn" id="sys-btn" type="button"
+        aria-label="Состояние систем: {{ {'ok': 'всё в порядке', 'warn': 'есть предупреждения', 'fail': 'есть сбой'}[health.worst()] }}"
+        hx-get="/partials/health" hx-trigger="every 60s" hx-swap="outerHTML">
+  <span class="dot {{ {'ok':'ok','warn':'warn','fail':'fail'}[health.worst()] }}"></span>
+  СИСТЕМЫ · LIVE
+  <div class="sys-pop">
+    <div class="sys-pop-head"><span>СОСТОЯНИЕ СИСТЕМ</span><span class="mono">{{ health.checked_at or "—" }}</span></div>
+    {% for name, (status, detail) in health.results.items() %}
+    <div class="sys-row"><span class="dot {{ status }}"></span><strong>{{ name }}</strong>
+      <span class="row-meta">{{ detail }}</span></div>
+    {% endfor %}
+  </div>
+</button>

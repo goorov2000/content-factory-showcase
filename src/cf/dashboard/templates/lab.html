@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+{% macro no_prompt_notice(niche) %}
+{# Только диагностика, без действия. Кнопка «Создать промпт из шаблона» отсюда
+   убрана: она копировала промпт темы-донора (мужские-образы) с его таймингами,
+   запретами и ссылкой на несуществующий рецепт этой темы, тут же активировала
+   версию и коммитила — то есть гасила честный скип генератора сценариев и
+   обходила правило №3. Черновик промпта темы пишет агент по её утверждённым
+   рецептам — обычным шагом цикла; включение — на воротах ниже.
+
+   Показываем ТОЛЬКО у утверждённых рецептов: там это работающая задача. В очереди
+   одобрения та же пометка висела на каждой карточке (13 повторов на 7 тем) и по
+   смыслу говорила «ничего не делайте» — писать промпт не по чему, пока нет решения
+   по рецепту. Строке, которая просит себя игнорировать, в очереди не место.
+
+   Здесь — только метка, без объяснения: действие принадлежит ТЕМЕ, а рецептов у
+   темы много (у «бренды-магазины» их 4). Развёрнутая подсказка с путём к файлу
+   повторялась бы дословно у каждого — тот же шум, что давала кнопка-скаффолд.
+   Что делать, сказано один раз, в карточке ворот «Включение правил сценариев
+   темы». #}
+<div class="queue-line notice-line">
+  <span class="pill no-prompt" title="правила сценариев темы не включены — сценарии по ней
+не производятся; решение в карточке «Ворота · Включение правил сценариев темы»"
+    >тема ждёт правил сценариев</span>
+</div>
+{% endmacro %}
+{% macro disclosure(id, label, count) %}
+{# Единый тумблер карточки вместо голого <details> с нативным треугольником:
+   подпись в регистре остальных полей, свой шеврон, счётчик всегда. Оба тумблера
+   стоят одной строкой ДО метрики — раньше «запреты» и «референсы» разрывала
+   служебная строка «в среднем просмотров …», и ритм карточки ломался. #}
+<details class="disclosure" id="{{ id }}">
+  <summary><span class="disclosure-chevron" aria-hidden="true"></span>{{ label }}
+    <span class="disclosure-count">{{ count }}</span></summary>
+  <div class="disclosure-body">{{ caller() }}</div>
+</details>
+{% endmacro %}
+{% macro excluded_notice(niche) %}
+{# «Вне производства» — это не задача, а причина НЕ тратить на рецепт внимание.
+   Поэтому подпись отдельным приглушённым стилем и с прямой рекомендацией: до
+   правки оператор видел ту же серо-красную плашку, что у «нет промпта», и не
+   понимал, надо ли что-то делать. #}
+<div class="queue-line notice-line excluded-line">
+  <span class="pill excluded">не наша тема</span>
+  <span class="hint"><b>{{ niche | niche_label }}</b> исключена из производства
+    (cf.config.json → dashboard.fanout.exclude_niches): бренд по ней контент не
+    выпускает. Рецепт остался от прогонов до исключения — <b>отклоните его</b>,
+    решение не потеряется. Новые черновики по этой теме больше не появятся.</span>
+</div>
+{% endmacro %}
+{% macro long_field(label, text, limit=340) %}
+{# Фаза 4: длинное описательное поле не превращает очередь в стену — 3 строки плюс
+   «показать полностью». Полный текст остаётся по запросу (не обрезаем данные). #}
+<div class="queue-line"><b>{{ label }}</b>
+  {%- if text | length > limit %}
+  <details class="more"><summary><span class="clamp">{{ text }}</span></summary></details>
+  {%- else %} {{ text }}{% endif %}</div>
+{% endmacro %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <div class="eyebrow">ПРИЁМЫ · РЕЦЕПТЫ РОЛИКОВ · EVAL-ПЕТЛЯ</div>
+    <h1>ЛАБОРАТОРИЯ</h1>
+  </div>
+  <span class="tag">РЕШЕНИЯ КОММИТЯТСЯ В GIT</span>
+</header>
+
+{% if error %}<div class="banner error">Не удалось собрать «Лабораторию». Обновите страницу или попробуйте позже.
+  <details class="tech"><summary>Техническая причина</summary><span class="mono">{{ error }}</span></details></div>{% endif %}
+
+<section class="card">
+  <div class="card-head"><div><h2 class="card-title">Рецепты роликов · очередь одобрения</h2>
+    <div class="card-sub">formulas/*/*.json · status=proposed</div></div>
+    <span class="tag">очередь: {{ formula_queue|length }}</span></div>
+  {% for f in formula_queue %}
+  <div class="queue-card">
+    <div class="row row--flat">
+      <span class="mono row-name">{{ f.name }} · v{{ f.version }}</span>
+      <span class="pill niche">{{ f.niche }}</span>
+      {# Ширина базы читается с одного взгляда: цвет + само число + подпись —
+         цвет не единственный носитель смысла (доступность кита). #}
+      {% if f.confidence %}<span class="pill">{{ f.confidence | confidence_label }}</span>{% endif %}
+      <span class="pill ev-{{ f.evidence_level }}" title="{{ f.evidence_level | evidence_hint }}">
+        {{ f.evidence_urls|length }} {{ f.evidence_urls|length | plural_ru("референс", "референса", "референсов") }} · {{ f.evidence_level | evidence_label }}</span>
+    </div>
+    {# «Вне производства» решает судьбу рецепта — остаётся. «Нет промпта» из очереди
+       убрано: промпт пишется ПОСЛЕ одобрения, до решения эта пометка ничего не
+       меняла и висела на каждой карточке (см. комментарий у no_prompt_notice). #}
+    {% if f.niche_excluded %}{{ excluded_notice(f.niche) }}{% endif %}
+    {# Заметка аналитика (status_reason) раньше показывалась ТОЛЬКО в секции пауз, и
+       предупреждения к решению до оператора не доходили: у grwm-interactive-frame там
+       417 знаков про то, что human_review сохраняется из-за промо в 3 из 5
+       референсов. Клампим тремя строками — «показать полностью» рядом. #}
+    {% if f.status_reason %}{{ long_field("Заметка аналитика:", f.status_reason) }}{% endif %}
+    {% if f.problem %}{{ long_field("Проблема зрителя:", f.problem) }}{% endif %}
+    {% if f.solution_format or f.duration %}
+    <div class="queue-line"><b>Формат:</b> {{ f.solution_format }}{% if f.duration %}{% if f.solution_format %} · {% endif %}{{ f.duration }} сек{% endif %}</div>
+    {% endif %}
+    {% if f.hook_elements %}
+    <div class="queue-line"><b>Хук{% if f.hook_timing %} ({{ f.hook_timing }}){% endif %}:</b></div>
+    <ul class="queue-list">
+      {% for el in f.hook_elements %}<li>{{ el }}</li>{% endfor %}
+    </ul>
+    {% elif f.hook_structure %}<div class="queue-line"><b>Хук:</b> {{ f.hook_structure }}</div>{% endif %}
+    {# Структура ролика — собственно рецепт. Не показывалась ни у одной формулы:
+       карточка читала только solution_structure.format, а шаги лежат под beats/steps/flow. #}
+    {% if f.solution_steps %}
+    <div class="queue-line"><b>Структура ролика:</b></div>
+    <ol class="queue-list queue-steps">
+      {% for s in f.solution_steps %}<li>{{ s }}</li>{% endfor %}
+    </ol>
+    {% endif %}
+    {% if f.conditions %}{{ long_field("Когда применять:", f.conditions) }}{% endif %}
+    {% if f.prohibitions or f.evidence_urls or f.visual_requirements or f.cta_type or f.solution_extra %}
+    <div class="disclosure-row">
+      {% if f.prohibitions %}
+      {% call disclosure("proh-" ~ loop.index, "Запреты", f.prohibitions|length) %}
+      <ul class="queue-list">{% for p in f.prohibitions %}<li>{{ p }}</li>{% endfor %}</ul>
+      {% endcall %}
+      {% endif %}
+      {# Съёмка: визуал, CTA и остаток ключей solution_structure. Всё это лежало в
+         формуле, но на карточку не попадало вообще — под кат, а не в небытие. #}
+      {% if f.visual_requirements or f.cta_type or f.solution_extra %}
+      {% call disclosure("shoot-" ~ loop.index, "Съёмка", f.visual_requirements|length + f.solution_extra|length + (1 if f.cta_type else 0)) %}
+      {% if f.visual_requirements %}
+      <ul class="queue-list">{% for v in f.visual_requirements %}<li>{{ v }}</li>{% endfor %}</ul>
+      {% endif %}
+      {% for x in f.solution_extra %}
+      <div class="queue-line"><b>{{ x.label }}:</b> {{ x.text }}</div>
+      {% endfor %}
+      {% if f.cta_type %}<div class="queue-line"><b>CTA:</b> {{ f.cta_type }}</div>{% endif %}
+      {% endcall %}
+      {% endif %}
+      {% if f.evidence_urls %}
+      {% call disclosure("refs-" ~ loop.index, "Референсы", f.evidence_urls|length) %}
+      {% for u in f.evidence_urls %}
+      {% set us = u|string %}
+      <div class="url-row">{% if us.startswith("http://") or us.startswith("https://") %}<a href="{{ us }}" target="_blank" rel="noopener">{{ us }}</a>{% else %}{{ us }}{% endif %}</div>
+      {% endfor %}
+      {% endcall %}
+      {% endif %}
+    </div>
+    {% endif %}
+    <div class="metric-line">
+      в среднем просмотров {{ f.avg_views | fmt_views }} · вовлечённость {{ f.avg_er | fmt_pct }} · <span class="ev-count ev-{{ f.evidence_level }}">{{ f.evidence_urls|length }} {{ f.evidence_urls|length | plural_ru("проверенный референс", "проверенных референса", "проверенных референсов") }}</span>
+    </div>
+    <form method="post" action="/formulas/decision" class="queue-actions">
+      <input type="hidden" name="path" value="{{ f.path }}">
+      <label class="sr-only" for="reason-{{ loop.index }}">Причина решения</label>
+      <input class="reason-input" id="reason-{{ loop.index }}" type="text" name="reason"
+             placeholder="причина (необязательно)">
+      <button class="btn-primary" type="submit" name="decision" value="approved"
+              onclick="return confirm('Утвердить рецепт? Снапшот пишется навсегда, отменить из дашборда нельзя; если у темы есть промпт, сразу пойдёт платный прогон сценариев.')">Утвердить</button>
+      <button class="btn-secondary" type="submit" name="decision" value="paused">В паузу</button>
+      <button class="btn-danger-outline" type="submit" name="decision" value="rejected"
+              onclick="return confirm('Отклонить рецепт? Он уйдёт из очереди — вернуть его через дашборд нельзя.')">Отклонить</button>
+    </form>
+  </div>
+  {% else %}<div class="empty-state">очередь пуста — прогоны ещё не приносили черновиков</div>{% endfor %}
+</section>
+
+{# ВОРОТА «Включение правил сценариев темы». Раньше здесь была витрина «Ниши ждут
+   brief-промпта»: она только сообщала о проблеме, а закрыть её оператор мог лишь
+   четырьмя ручными шагами в терминале — и потому не закрывал. Теперь это точка
+   действия: полный текст промпта читается здесь же и включается кнопкой.
+   Правило №3 соблюдено — агент отдал только черновик, включает человек. #}
+{% if prompt_gate %}
+<section class="card">
+  <div class="card-head"><div><h2 class="card-title">Ворота · Включение правил сценариев темы</h2>
+    <div class="card-sub">у темы есть утверждённый рецепт, но сценарии по ней
+      не производятся, пока правила не включены</div></div>
+    <span class="tag">тем: {{ prompt_gate|length }}</span></div>
+  {% for n in prompt_gate %}
+  <div class="gate-item">
+    <div class="row">
+      <span class="row-name">{{ n.niche | niche_label }}</span>
+      <span class="grow hint">{{ n.state_label }} · {{ n.approved }} {{ n.approved | plural_ru("утверждённый рецепт", "утверждённых рецепта", "утверждённых рецептов") }}</span>
+      {% if n.state == "none" and runner %}
+      {# то же правило подтверждения, что у ▶ ленты: клик = платный вызов агента #}
+      <form method="post" action="/prompts/write" class="inline-form"
+            data-confirm="Написать черновик правил сценариев темы «{{ n.niche }}»? Это платный вызов агента.">
+        <input type="hidden" name="niche" value="{{ n.niche }}">
+        <button class="stage-run" type="submit"
+                title="Написать черновик правил сценариев сейчас, не дожидаясь прогона">▶</button>
+      </form>
+      {% endif %}
+    </div>
+    {% if n.draft_error %}
+    <div class="banner warn">черновик не применить: {{ n.draft_error }}</div>
+    {% elif n.prompt_text %}
+    {# Кнопка внутри <details>: пока текст не раскрыт, включить нечего — это
+       единственное, чем экранное ревью отличается от слепого клика. #}
+    <details class="gate-draft">
+      <summary>Прочитать промпт целиком ({{ n.prompt_text.splitlines() | length }} строк) и включить</summary>
+      <pre class="gate-prompt-text">{{ n.prompt_text }}</pre>
+      <div class="actions">
+        <form method="post" action="/prompts/apply" class="inline-form">
+          <input type="hidden" name="filename" value="{{ n.draft_name }}">
+          {# отпечаток ИМЕННО того текста, который показан выше: если черновик
+             перепишет прогон, пока карточка открыта, применение отдаст 409 #}
+          <input type="hidden" name="sha256" value="{{ n.sha256 }}">
+          <button class="btn-primary" type="submit">Включить промпт темы</button>
+        </form>
+        <form method="post" action="/prompts/reject" class="inline-form">
+          <input type="hidden" name="filename" value="{{ n.draft_name }}">
+          <label class="sr-only" for="reject-{{ loop.index }}">Причина отклонения</label>
+          <input class="note" id="reject-{{ loop.index }}" name="reason"
+                 placeholder="Причина отклонения…">
+          <button class="btn-secondary" type="submit">Отклонить черновик</button>
+        </form>
+      </div>
+    </details>
+    {% elif n.state == "file_only" %}
+    <div class="banner warn">Файл <span class="mono">prompts/briefs/{{ n.niche }}/reel.md</span>
+      есть, но активной версии <span class="mono">{{ "brief-" ~ n.niche ~ "-reel" }}</span> нет —
+      генератор тему пропускает. Включите версию:
+      <span class="mono">cf log-prompt-version --prompt-id brief-{{ n.niche }}-reel --version v1
+      --path prompts/briefs/{{ n.niche }}/reel.md --changelog "…"</span></div>
+    {% endif %}
+  </div>
+  {% endfor %}
+  <div class="queue-line hint mt-8">
+    Черновик пишет агент по утверждённым рецептам и приёмам темы — обычным шагом
+    цикла. Включение промпта остаётся за вами: файл и активная версия появляются
+    только по нажатию (правило №3).
+  </div>
+</section>
+{% endif %}
+
+{% if paused_formulas %}
+<section class="card">
+  <div class="card-head"><div><h2 class="card-title">Рецепты на паузе</h2>
+    <div class="card-sub">приостановлены оператором</div></div></div>
+  {% for f in paused_formulas %}
+  <div class="row">
+    <span class="mono">{{ f.name }} · v{{ f.version }}</span>
+    <span class="pill niche">{{ f.niche }}</span>
+    <span class="grow hint">{{ f.status_reason }}</span>
+    <form method="post" action="/formulas/decision" class="queue-actions">
+      <input type="hidden" name="path" value="{{ f.path }}">
+      <button class="btn-secondary" type="submit" name="decision" value="approved">Вернуть в работу</button>
+      <button class="btn-danger-outline" type="submit" name="decision" value="rejected"
+              onclick="return confirm('Отклонить рецепт? Он уйдёт из очереди — вернуть его через дашборд нельзя.')">Отклонить</button>
+    </form>
+  </div>
+  {# «Нет промпта» здесь не показываем: рецепт на паузе всё равно не производит
+     сценарии, а ворота считают только утверждённые — пометка вела бы в карточку,
+     которой для этой темы нет. Вернётся в работу — тема появится там. #}
+  {% if f.niche_excluded %}{{ excluded_notice(f.niche) }}{% endif %}
+  {% endfor %}
+</section>
+{% endif %}
+
+<section class="card">
+  <div class="card-head"><div><h2 class="card-title">Темы · новые предложения</h2>
+    <div class="card-sub">кластеры роликов, которым ещё не назначена тема</div></div>
+    <span class="tag">очередь: {{ niche_queue|length }}</span></div>
+  {% for n in niche_queue %}
+  <div class="queue-card">
+    <span class="pill niche-new">НОВАЯ ТЕМА · {{ n.cluster_size }} {{ n.cluster_size | plural_ru("ролик", "ролика", "роликов") }}</span>
+    <div class="item-title">{{ n.title or n.name }}</div>
+    {% if n.description %}<div class="item-sub">{{ n.description }}</div>{% endif %}
+    {% if n.examples %}
+    <details>
+      <summary>примеры ({{ n.examples|length }})</summary>
+      {% for e in n.examples %}
+      {% set su = e.source_url|default("", true)|string %}
+      <div class="url-row">{{ e.caption }} — {% if su.startswith("http://") or su.startswith("https://") %}<a href="{{ su }}" target="_blank" rel="noopener">{{ su }}</a>{% else %}{{ su }}{% endif %}</div>
+      {% endfor %}
+    </details>
+    {% endif %}
+    <form method="post" action="/niches/decision" class="queue-actions">
+      <input type="hidden" name="filename" value="{{ n.filename }}">
+      <button class="btn-primary" type="submit" name="decision" value="accepted">Принять тему</button>
+      <button class="btn-danger-outline" type="submit" name="decision" value="rejected"
+              onclick="return confirm('Отклонить тему? Предложение уйдёт из очереди.')">Отклонить</button>
+    </form>
+  </div>
+  {% else %}<div class="empty-state">новых тем пока нет</div>{% endfor %}
+</section>
+
+<section class="card">
+  <div class="card-head"><div><h2 class="card-title">Ритуалы недели</h2>
+    <div class="card-sub">/cf-eval · /cf-tune-sources · запуск с дашборда, отчёт → История задач → «Отчёты этапов»</div></div></div>
+  {% for r in rituals %}
+  <div class="row">
+    <span class="mono row-name">{{ r.label }}</span>
+    {% if r.overdue %}<span class="badge {{ 'pending' if r.badge == 'нет данных' else 'rejected' }}">{{ r.badge }}</span>{% endif %}
+    <span class="grow hint">
+      {% if r.last_date %}последний: {{ r.last_date }} · {{ r.days_ago }} дн. назад{% else %}ещё не запускался{% endif %}
+    </span>
+    {% if runner %}
+    <form method="post" action="/rituals/{{ r.key }}/run" class="inline-form"
+          data-confirm="Запустить {{ r.command }}? Это платный прогон агента.">
+      <button class="stage-run" type="submit" title="Запустить {{ r.command }}">▶</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endfor %}
+  {% for p in pending_source_proposals %}
+  <div class="queue-line notice-line mt-8">
+    <span class="pill no-prompt">ждёт apply-sources</span>
+    <span class="hint">{{ p.file }} · {{ p.platform }} · удалить {{ p.remove }} / добавить {{ p.add }} — ревью → approved → <span class="mono">cf apply-sources</span></span>
+  </div>
+  {% endfor %}
+  <div class="queue-line hint mt-8">
+    Раз в полгода — <b>drill восстановления</b> с замером времени: <span class="mono">docs/RUNBOOK.md</span> §4.
+  </div>
+</section>
+
+<div class="two-col">
+  <section class="card">
+    <div class="card-head"><div><h2 class="card-title">Версии промптов</h2>
+      <div class="card-sub">CF Prompt Versions</div></div></div>
+    {% if versions is none %}<div class="banner error">Версии промптов не прочитаны — данные сейчас недоступны.</div>
+    {% else %}
+    {% for v in versions %}
+    <div class="row">
+      <span class="dot {{ 'ok' if v.is_active else 'warn' }}"></span>
+      <span class="mono">{{ v.prompt_id }} · {{ v.version }}</span>
+      {% if v.is_active %}<span class="badge approved">Активна</span>
+      {% elif v.is_candidate %}<span class="badge pending">Кандидат A/B</span>{% endif %}
+      <span class="row-meta mono">{{ v.activated_at | fmt_date }}</span>
+    </div>
+    {% else %}<div class="empty-state">Версий промптов ещё нет.</div>{% endfor %}
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <div class="card-head"><div><h2 class="card-title">Рецепты роликов</h2>
+      <div class="card-sub">formulas/_approved · утверждены оператором</div></div></div>
+    {% for f in formulas %}
+    <div class="row">
+      <span class="mono">{{ f.name }} · v{{ f.version }}</span>
+      <span class="tag">{{ f.niche }}</span>
+      {% if f.confidence %}<span class="badge {{ 'success' if f.confidence == 'high' else 'pending' }}">{{ f.confidence | confidence_label }}</span>{% endif %}
+      <span class="row-meta mono">{{ f.approved_at | fmt_date }}</span>
+    </div>
+    {% if f.own_performance %}
+    <div class="queue-line"><b>Свои замеры:</b>
+      {{ f.own_performance.reels }} {{ f.own_performance.reels | plural_ru("ролик", "ролика", "роликов") }} · медиана
+      {{ f.own_performance.median_views | fmt_views }} просмотров ·
+      вовлечённость {{ f.own_performance.avg_er | fmt_pct("нет данных") }} ·
+      последний замер {{ f.own_performance.last_measured_at or "—" }}
+    </div>
+    {% else %}
+    <div class="queue-line hint">Свои замеры: нет данных</div>
+    {% endif %}
+    {# Тема вне производства старше «нет промпта»: предлагать промпт для темы,
+       по которой бренд не выпускает контент, — противоречие. Показываем ровно
+       одну причину, ту, что решает судьбу рецепта. #}
+    {% if f.niche_excluded %}{{ excluded_notice(f.niche) }}
+    {% elif not f.niche_has_prompt %}{{ no_prompt_notice(f.niche) }}{% endif %}
+    {% else %}<div class="empty-state">Утверждённых рецептов пока нет.</div>{% endfor %}
+  </section>
+</div>
+
+<section class="card">
+  <div class="card-head"><div><h2 class="card-title">Паттерны</h2>
+    <div class="card-sub">agent-runtime/patterns · каждый с evidence</div></div></div>
+  {% for batch in patterns %}
+  <div class="field-label mt-12">{{ batch.file }} · {{ batch.niche | niche_label }} · {{ batch.source_tab }} · {{ batch.generated_at | fmt_date }}</div>
+  {% for p in batch["items"] %}
+  <div class="row">
+    <span class="mono">{{ p.pattern_id }}</span>
+    <span class="grow hint-plain">{{ p.description | truncate(140) }}</span>
+    <span class="badge {{ 'success' if p.confidence == 'high' else 'pending' }}">{{ p.confidence | confidence_label }}</span>
+    <span class="row-meta mono"><span class="ev-count ev-{{ p.evidence_level }}">{{ p.urls }} URL</span> · просмотров {{ p.avg_views | fmt_views }} · вовлечённость {{ p.avg_er | fmt_pct }}</span>
+  </div>
+  {% endfor %}
+  {% else %}<div class="empty-state">Паттернов пока нет — их создаёт анализ батча (/cf-analyze).</div>{% endfor %}
+</section>
+
+<div class="two-col">
+  <section class="card">
+    <div class="card-head"><div><h2 class="card-title">Proposals</h2>
+      <div class="card-sub">очередь изменений промптов · применяются только через git</div></div></div>
+    {% for p in proposals %}
+    <div class="row">
+      <span class="badge {{ {'proposed': 'pending', 'approved': 'approved', 'rejected': 'rejected'}.get(p.status, 'pending') }}">{{ p.status | term }}</span>
+      <span class="grow hint-plain">{{ p.title | truncate(80) }}</span>
+      <span class="row-meta mono">{{ p.created | fmt_date }}</span>
+    </div>
+    {% else %}<div class="empty-state">Proposals пока нет.</div>{% endfor %}
+  </section>
+
+  <section class="card">
+    <div class="card-head"><div><h2 class="card-title">Последний eval</h2>
+      <div class="card-sub">agent-runtime/evals · еженедельная оценка</div></div></div>
+    {% if eval_report %}
+    <div class="field-label">{{ eval_report.file }}{% if eval_report.period %} · {{ eval_report.period.get("since") | fmt_date }} — {{ eval_report.period.get("until") | fmt_date }}{% endif %}</div>
+    {% for version, agg in eval_report.by_prompt_version.items() %}
+    <div class="row"><span class="mono">{{ version }}</span>
+      <span class="row-meta mono">{{ agg.get("reels", "—") }} роликов · просмотров {{ agg.get("avg_views") | fmt_views }} · вовлечённость {{ agg.get("avg_er") | fmt_pct }}</span></div>
+    {% endfor %}
+    {% for insight in eval_report.insights %}
+    <div class="row hint-plain">{{ insight }}</div>
+    {% endfor %}
+    {% else %}<div class="empty-state">Eval ещё не запускался — отчёт появится после первой недельной оценки.</div>{% endif %}
+  </section>
+</div>
+{% endblock %}

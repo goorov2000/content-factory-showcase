@@ -1,0 +1,6 @@
+# сгенерировано `cf codex-sync` — не править руками
+interface:
+  display_name: "Prompt Optimizer"
+  short_description: "Prompt Optimizer - evidence-backed proposal изменения промпта"
+policy:
+  allow_implicit_invocation: false

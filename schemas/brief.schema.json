@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CF creative brief",
+  "type": "object",
+  "required": ["brief_id", "source_pattern_ids", "formula_id", "prompt_version",
+               "hook", "script", "visual_direction", "cta", "references"],
+  "properties": {
+    "brief_id": {"type": "string", "minLength": 1},
+    "source_pattern_ids": {"type": "array", "minItems": 1,
+                           "items": {"type": "string", "minLength": 1}},
+    "formula_id": {"type": "string", "minLength": 1},
+    "prompt_version": {"type": "string", "minLength": 1},
+
+    "_comment_hook": {"$comment": "hook — ФРАЗА, которую зритель слышит или читает первой, не описание кадра. maxLength 400 — грубый предохранитель от прозы в поле (аудит 2026-08-04: у 12 из 13 брифов промпта v4 сюда попала режиссёрская ремарка длиной до 384 знаков, потому что промпт требовал 'взять элемент из hook_structure.elements', а elements рецептов — описания кадра). РАБОЧУЮ границу считает cf.craftcheck по hook_structure.timing рецепта: 3 секунды — это не абстрактные 400 знаков, а конкретный бюджет. Схема не знает рецепта и поэтому ставит только потолок."},
+    "hook": {"type": "string", "minLength": 5, "maxLength": 400},
+
+    "script": {"type": "string", "minLength": 30},
+    "visual_direction": {"type": "string", "minLength": 10},
+    "cta": {"type": "string", "minLength": 3},
+
+    "_comment_tested_variable": {"$comment": "tested_variable/differs_from — антидубликатная норма (правило 3 brief-generator.md). Поля ОПИСАТЕЛЬНЫЕ и не обязательные намеренно: сделать их required значило бы проверять декларацию, а не поведение, а декларация уже оказывалась ложной — бриф ...-20260724-voiceover утверждал 'все прошлые брифы формулы без озвучки' при трёх существовавших озвученных. Настоящее принуждение стоит на воротах: cf.craftcheck.duplicate_content сверяет ЛЕКСИКУ сценария с одобренными брифами той же формулы за 30 дней и не спрашивает, что бриф о себе заявил. Поля остаются, чтобы генератор мог назвать ось ротации, а trace — её прочитать."},
+    "tested_variable": {"type": "string", "minLength": 3},
+    "differs_from": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+
+    "references": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^https?://"}
+    }
+  }
+}

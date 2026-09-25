@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <div class="eyebrow">СЦЕНАРИИ РОЛИКОВ · ВАШЕ ЕДИНСТВЕННОЕ РЕШЕНИЕ</div>
+    <h1>СЦЕНАРИИ</h1>
+    <p class="lead">Референсы, приёмы, рецепты и промпты завод решает сам. От вас —
+      одно решение: снимаем или нет. Одобренные уходят в очередь съёмки.</p>
+  </div>
+  <nav class="chips" aria-label="Фильтр сценариев по статусу">
+    {% for key, label in [("all","Все"),("pending","Ждут вас"),("revised","Доработка"),("approved","В съёмку"),("rejected","Отклонены")] %}
+    {# Порядок сортировки переживает смену фильтра: он выбран продюсером, а не
+       навязан экраном, и сбрасывать его при клике по чипу нечестно. #}
+    <a class="chip {{ 'active' if status_filter == key }}" href="/briefs?status={{ key }}&amp;sort={{ sort }}"{{ ' aria-current="true"' | safe if status_filter == key }}>
+      {{ label }}{% if counts.get(key) is not none %} · {{ counts[key] }}{% endif %}</a>
+    {% endfor %}
+    {# P5.4: продюсер уходит отсюда на печатную очередь съёмки (одобренные без рила) #}
+    <a class="chip" href="/briefs/shooting-list">→ очередь съёмки</a>
+  </nav>
+</header>
+
+
+{# P5.5: инлайн-очередь ревью в отдельном партиале; hx-post решения свопает её на
+   месте (#briefs-review, outerHTML) без полной перерисовки страницы. #}
+{# Стабильный живой регион: он НЕ свопается, поэтому объявление реально звучит #}
+<p id="review-say" role="status" aria-live="polite" class="sr-only"></p>
+{% include "partials/briefs_review.html" %}
+
+{# P5.5: хоткеи A/R/→. Скрипт живёт вне #briefs-review, поэтому переживает htmx-своп;
+   кнопки/ссылки ищутся в DOM на каждое нажатие, попадая в свежесвопнутую разметку.
+   Гард: игнорируем нажатия при фокусе в поле ввода (заметка ревьюера, ответ агенту),
+   иначе набор текста дёргал бы решение. e.code (KeyA/KeyR) — независим от раскладки. #}
+<script data-hotkeys>
+(function () {
+  function typing(el) {
+    if (!el || !el.tagName) return false;
+    var t = el.tagName;
+    return t === "INPUT" || t === "TEXTAREA" || t === "SELECT" || el.isContentEditable;
+  }
+  document.addEventListener("keydown", function (e) {
+    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (typing(e.target)) return;                       // не мешаем набору в полях
+    if (e.code === "KeyA") {                             // A — одобрить текущий бриф
+      var a = document.querySelector('[data-hotkey="approve"]');
+      if (a) { e.preventDefault(); a.click(); }
+    } else if (e.code === "KeyR") {                      // R — отклонить текущий бриф
+      var r = document.querySelector('[data-hotkey="reject"]');
+      if (r) { e.preventDefault(); r.click(); }
+    } else if (e.code === "ArrowRight") {                // → — следующий pending
+      var links = document.querySelectorAll("[data-pending-link]");
+      if (!links.length) return;
+      var cur = document.querySelector("tr.selected [data-pending-link]");
+      var idx = -1;
+      for (var i = 0; i < links.length; i++) { if (links[i] === cur) { idx = i; break; } }
+      var next = links[(idx + 1) % links.length];
+      if (next && next.getAttribute("href")) {
+        e.preventDefault();
+        window.location.href = next.getAttribute("href");
+      }
+    }
+  });
+
+  // После решения htmx подменяет всю очередь целиком, и фокус клавиатуры уходит
+  // на <body>: продюсер, работающий с клавиатуры, каждый раз начинал табать
+  // сначала. Возвращаем фокус на заголовок нового сценария и одной фразой
+  // сообщаем результат — стабильному живому региону, а не свопнутому блоку.
+  document.addEventListener("htmx:afterSwap", function (e) {
+    if (!e.target || e.target.id !== "briefs-review") return;
+    var say = document.getElementById("review-say");
+    var hook = document.getElementById("brief-hook");
+    if (say) say.textContent = hook
+      ? "Решение сохранено. Следующий сценарий: " + hook.textContent.trim()
+      : "Решение сохранено. Сценариев в очереди больше нет.";
+    if (hook) hook.focus();
+  });
+})();
+</script>
+{% endblock %}

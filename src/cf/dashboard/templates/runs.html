@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <div class="eyebrow">СИСТЕМНЫЙ ЖУРНАЛ</div>
+    <h1>ИСТОРИЯ ЗАДАЧ</h1>
+    {# Фаза 3: лид «что это и когда сюда заходить» — «Запуски» маркетолог читал как
+       запуск кампании, а это журнал фоновых задач системы. #}
+    <p class="lead">Автоматические задачи сбора и анализа. Обычно нужны, только если
+      данные не обновились или что-то пошло не так.</p>
+  </div>
+</header>
+
+
+{% if reply_notice %}
+{# Ответ, который не ушёл (звено было занято), возвращается сюда вместе с текстом.
+   Полосой он остаётся намеренно, в отличие от прочих сообщений (С1): тост живёт
+   6 секунд, а здесь вместе с сообщением возвращается НЕОТПРАВЛЕННЫЙ текст ответа —
+   потерять его через 6 секунд значит потерять работу продюсера. #}
+<section class="card">
+  <div class="banner warn">{{ reply_notice.message }}</div>
+  <form method="post" action="/stages/{{ reply_notice.stage }}/reply" class="reply-form">
+    <input type="hidden" name="session_id" value="{{ reply_notice.session_id }}">
+    <label class="sr-only" for="reply-again">Ответ агенту</label>
+    <textarea class="note" id="reply-again" name="answer">{{ reply_notice.answer }}</textarea>
+    <div class="actions"><button class="btn-primary" type="submit">Отправить ещё раз</button></div>
+  </form>
+</section>
+{% endif %}
+
+{# «Отчёты этапов» переехали сюда с «Обзора» (решение владельца 2026-07-28,
+   элемент 19): это единственный канал, которым владелец отвечает агенту, и всё
+   про прогоны собирается на одном экране. Карточка живёт ВНЕ ветки error/empty
+   журнала: сбой чтения Run Log не должен уносить с собой канал ответа агенту. #}
+{% if runner %}
+<section class="card">
+  <div class="card-head">
+    <div><h2 class="card-title">Отчёты этапов</h2>
+      <div class="card-sub">ответы агентов; на вопросы можно ответить прямо здесь</div></div>
+  </div>
+  {# Секцию рендерим всегда (пока есть runner), даже без отчётов: контейнер #reports
+     с hx-poll должен быть в DOM, чтобы появившийся позже отчёт/вопрос агента
+     подхватился live, без ручного F5 (P2.12). Пустой плейсхолдер — внутри партиала. #}
+  {% include "partials/reports.html" %}
+  {% set stage_names = {"raw": "Собранные ролики", "factory": "Контент-завод",
+                         "publish": "Съёмка и публикация", "stats": "Статистика"} %}
+  {% for key in runner.reports.keys() %}
+  {% set ns = namespace(last_session="") %}
+  {% for entry in runner.reports[key] | reverse %}
+  {% if not ns.last_session and entry.session_id %}{% set ns.last_session = entry.session_id %}{% endif %}
+  {% endfor %}
+  {# ritual-* каналы не звенья: state и /reply у них нет — форму ответа не рисуем #}
+  {% if key in runner.state and runner.state[key].status != "running" and ns.last_session %}
+  <form method="post" action="/stages/{{ key }}/reply" class="reply-form">
+    <input type="hidden" name="session_id" value="{{ ns.last_session }}">
+    <label class="sr-only" for="reply-{{ key }}">Ответ агенту {{ stage_names.get(key, key) }}</label>
+    <textarea class="note" id="reply-{{ key }}" name="answer"
+              placeholder="Ответ агенту {{ stage_names.get(key, key) }}…"></textarea>
+    <div class="actions"><button class="btn-primary" type="submit">Ответить</button></div>
+  </form>
+  {% endif %}
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if error %}
+<div class="banner error">Не удалось загрузить журнал. Обновите страницу или попробуйте позже.
+  <details class="tech"><summary>Техническая причина</summary><span class="mono">{{ error }}</span></details></div>
+{% elif not runs %}<div class="empty-state">Задачи ещё не запускались.</div>
+{% else %}
+<div class="card card--table">
+  <table class="queue">
+    <caption class="sr-only">Журнал задач системы</caption>
+    <thead><tr><th scope="col">Задача</th><th scope="col">Что произошло</th><th scope="col">Как запущено</th><th scope="col">Статус</th><th scope="col">Когда</th></tr></thead>
+    <tbody>
+      {% for run in runs %}
+      <tr>
+        <td>{{ run.task }}
+          {# слаг агента не выбрасываем: по нему владелец ищет прогон в логах #}
+          {% if run.agent_id and run.agent_id != run.task %}<div class="row-note mono">{{ run.agent_id }}</div>{% endif %}</td>
+        <td>{{ run.summary or "—" }}
+          {% if run.raw_summary %}
+          <details class="tech"><summary>детали</summary><span class="mono">{{ run.raw_summary }}</span></details>
+          {% endif %}
+          {% for err in run.errors_list %}<div class="run-error">{{ err }}</div>{% endfor %}</td>
+        <td><span class="tag">{{ run.trigger_label }}</span>
+          {% if run.dry_run %}<div class="row-note">тест — ничего не сохранено</div>{% endif %}</td>
+        <td><span class="badge {{ run.badge_class }}">{{ run.badge_label }}</span></td>
+        <td class="mono">{{ run.when }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if total > runs | length %}<div class="table-foot">Показаны последние {{ runs | length }} из {{ total }}.</div>{% endif %}
+{% endif %}
+{% endblock %}

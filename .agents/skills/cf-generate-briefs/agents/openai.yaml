@@ -1,0 +1,6 @@
+# сгенерировано `cf codex-sync` — не править руками
+interface:
+  display_name: "Следуй промпту prompts/agents/brief-generator.md. Аргументы: $AR"
+  short_description: "Следуй промпту prompts/agents/brief-generator.md. Аргументы: $ARGUMENTS"
+policy:
+  allow_implicit_invocation: false
